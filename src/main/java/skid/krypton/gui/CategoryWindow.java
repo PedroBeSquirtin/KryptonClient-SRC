@@ -26,12 +26,13 @@ public final class CategoryWindow {
     public ClickGUI parent;
     private float hoverAnimation;
     
-    // Brighter Uranium Green Color Scheme
-    private final Color URANIUM_BG = new Color(20, 28, 20, 245);
-    private final Color URANIUM_HEADER = new Color(28, 38, 28, 255);
-    private final Color URANIUM_ACCENT = new Color(100, 255, 100, 255);
-    private final Color URANIUM_HOVER = new Color(100, 255, 100, 30);
-    private final Color URANIUM_BORDER = new Color(80, 120, 80, 150);
+    // Clean Green Color Scheme
+    private final Color BG_COLOR = new Color(18, 25, 18, 245);
+    private final Color HEADER_COLOR = new Color(25, 35, 25, 255);
+    private final Color ACCENT_GREEN = new Color(80, 220, 80, 255);
+    private final Color HOVER_GREEN = new Color(80, 220, 80, 25);
+    private final Color BORDER_COLOR = new Color(70, 100, 70, 120);
+    private final Color TEXT_BRIGHT = new Color(255, 255, 255, 255);
     
     // Icons for categories
     private final String COMBAT_ICON = "⚔️";
@@ -71,10 +72,10 @@ public final class CategoryWindow {
     public void render(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
         try {
             int targetAlpha = skid.krypton.module.modules.client.Krypton.windowAlpha.getIntValue();
-            Color targetColor = new Color(20, 28, 20, targetAlpha);
+            Color targetColor = new Color(18, 25, 18, targetAlpha);
             
             if (this.currentColor == null) {
-                this.currentColor = new Color(20, 28, 20, 0);
+                this.currentColor = new Color(18, 25, 18, 0);
             } else {
                 this.currentColor = ColorUtil.a(0.05f, targetColor, this.currentColor);
             }
@@ -84,40 +85,34 @@ public final class CategoryWindow {
             
             renderShadow(context, this.x, this.y, this.width, this.height);
             
-            Color panelBg = ColorUtil.a(new Color(20, 28, 20, this.currentColor.getAlpha()), URANIUM_HOVER, this.hoverAnimation);
-            float topRadius = this.extended ? 12.0F : 12.0F;
-            float bottomRadius = this.extended ? 0.0F : 12.0F;
+            Color panelBg = ColorUtil.a(BG_COLOR, HOVER_GREEN, this.hoverAnimation);
+            float topRadius = 10.0F;
+            float bottomRadius = this.extended ? 0.0F : 10.0F;
             
+            // Main panel
             RenderUtils.renderRoundedQuad(context.getMatrices(), panelBg, 
                 this.x, this.y, this.x + this.width, this.y + this.height, 
                 topRadius, topRadius, bottomRadius, bottomRadius, 50.0);
             
-            // Header background with rounded top
-            context.fill(this.x, this.y, this.x + this.width, this.y + 36, URANIUM_HEADER.getRGB());
+            // Header
+            context.fill(this.x, this.y, this.x + this.width, this.y + 32, HEADER_COLOR.getRGB());
             
-            // Get icon for category
+            // Category text with icon - perfectly centered
             String icon = getCategoryIcon(this.category);
             String categoryName = this.category.name.toString();
             String fullText = icon + " " + categoryName;
             
-            // Calculate text position
             int textX = this.x + (this.width - getTextWidth(fullText)) / 2;
-            int textY = this.y + 13;
+            int textY = this.y + 10;
             
-            // Draw text using both methods to ensure visibility
-            // Method 1: Try TextRenderer
-            try {
-                TextRenderer.drawString(fullText, context, textX, textY, URANIUM_ACCENT.getRGB());
-            } catch (Exception e) {
-                // Method 2: Fallback to Minecraft's default font
-                context.drawText(MinecraftClient.getInstance().textRenderer, fullText, textX, textY, URANIUM_ACCENT.getRGB(), false);
-            }
+            // Draw text with bright color
+            drawText(context, fullText, textX, textY, ACCENT_GREEN.getRGB());
             
-            // Bottom accent line for header
-            context.fill(this.x, this.y + 35, this.x + this.width, this.y + 36, URANIUM_ACCENT.getRGB());
+            // Bottom accent line
+            context.fill(this.x, this.y + 31, this.x + this.width, this.y + 32, ACCENT_GREEN.getRGB());
             
-            // Border with rounded corners
-            RenderUtils.renderRoundedQuad(context.getMatrices(), URANIUM_BORDER,
+            // Border
+            RenderUtils.renderRoundedQuad(context.getMatrices(), BORDER_COLOR,
                 this.x, this.y, this.x + this.width, this.y + this.height,
                 topRadius, topRadius, bottomRadius, bottomRadius, 30.0);
             
@@ -139,6 +134,14 @@ public final class CategoryWindow {
         }
     }
     
+    private void drawText(DrawContext context, String text, int x, int y, int color) {
+        try {
+            TextRenderer.drawString(text, context, x, y, color);
+        } catch (Exception e) {
+            context.drawText(MinecraftClient.getInstance().textRenderer, text, x, y, color, false);
+        }
+    }
+    
     private String getCategoryIcon(Category category) {
         if (category == null || category.name == null) return "◆";
         String name = category.name.toString().toLowerCase();
@@ -154,8 +157,8 @@ public final class CategoryWindow {
     }
     
     private void renderShadow(DrawContext context, int x, int y, int width, int height) {
-        for (int i = 1; i <= 5; i++) {
-            int alpha = 20 - i * 3;
+        for (int i = 1; i <= 4; i++) {
+            int alpha = 15 - i * 3;
             context.fill(x - i, y - i, x + width + i, y + height + i, new Color(0, 0, 0, Math.max(0, alpha)).getRGB());
         }
     }
@@ -244,9 +247,7 @@ public final class CategoryWindow {
         }
     }
 
-    public void mouseScrolled(final double mouseX, final double mouseY, final double horizontalAmount, final double verticalAmount) {
-        // No scrolling for fixed windows
-    }
+    public void mouseScrolled(final double mouseX, final double mouseY, final double horizontalAmount, final double verticalAmount) {}
 
     public int getX() {
         return this.x;
@@ -265,6 +266,6 @@ public final class CategoryWindow {
     }
 
     public boolean isHovered(final double mouseX, final double mouseY) {
-        return mouseX > this.x && mouseX < this.x + this.width && mouseY > this.y && mouseY < this.y + 36;
+        return mouseX > this.x && mouseX < this.x + this.width && mouseY > this.y && mouseY < this.y + 32;
     }
 }
