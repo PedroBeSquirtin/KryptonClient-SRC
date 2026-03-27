@@ -34,10 +34,12 @@ public final class ModuleButton {
     private final Color URANIUM_BG = new Color(25, 35, 25, 235);
     private final Color URANIUM_BORDER = new Color(70, 100, 70, 150);
     private final Color URANIUM_GLOW = new Color(100, 255, 100, 80);
+    private final Color BUTTON_ON = new Color(80, 200, 80, 255);
+    private final Color BUTTON_OFF = new Color(80, 80, 80, 200);
     
     private float hoverAnimation;
     private float enabledAnimation;
-    private static final float CORNER_RADIUS = 6.0f;
+    private static final float CORNER_RADIUS = 8.0f;
 
     public ModuleButton(final CategoryWindow parent, final Module module, final int offset) {
         this.settings = new ArrayList<>();
@@ -166,7 +168,7 @@ public final class ModuleButton {
             RenderUtils.renderRoundedQuad(drawContext.getMatrices(), 
                 ColorUtil.a(URANIUM_DISABLED, color, this.enabledAnimation), 
                 x, y + 2, x + indicatorWidth, y + height - 2, 
-                1.5f, 1.5f, 1.5f, 1.5f, 60.0);
+                2.0f, 2.0f, 2.0f, 2.0f, 60.0);
         }
     }
 
@@ -179,26 +181,32 @@ public final class ModuleButton {
         TextRenderer.drawString(moduleName, drawContext, 
             x + 12, y + height / 2 - 5, nameColor.getRGB());
         
-        // Modern toggle button
-        final int toggleX = x + width - 42;
-        final int toggleY = y + height / 2 - 9;
-        final int toggleWidth = 32;
-        final int toggleHeight = 18;
+        // ON/OFF Toggle Button
+        final int buttonX = x + width - 55;
+        final int buttonY = y + height / 2 - 12;
+        final int buttonWidth = 45;
+        final int buttonHeight = 22;
         
-        // Background
-        Color toggleBg = (this.module != null && this.module.isEnabled()) ? URANIUM_ENABLED : new Color(60, 80, 60, 200);
-        RenderUtils.renderRoundedQuad(drawContext.getMatrices(), toggleBg,
-            toggleX, toggleY, toggleX + toggleWidth, toggleY + toggleHeight, 9, 9, 9, 9, 30);
+        boolean isEnabled = this.module != null && this.module.isEnabled();
         
-        // Handle
-        int handleX = (this.module != null && this.module.isEnabled()) ? toggleX + toggleWidth - 12 : toggleX + 2;
-        RenderUtils.renderRoundedQuad(drawContext.getMatrices(), Color.WHITE,
-            handleX, toggleY + 2, handleX + 10, toggleY + toggleHeight - 2, 7, 7, 7, 7, 30);
+        // Background with rounded corners
+        Color buttonBg = isEnabled ? BUTTON_ON : BUTTON_OFF;
+        RenderUtils.renderRoundedQuad(drawContext.getMatrices(), buttonBg,
+            buttonX, buttonY, buttonX + buttonWidth, buttonY + buttonHeight, 11, 11, 11, 11, 30);
+        
+        // ON/OFF Text
+        String buttonText = isEnabled ? "ON" : "OFF";
+        int textWidth = TextRenderer.getWidth(buttonText);
+        int textXPos = buttonX + (buttonWidth - textWidth) / 2;
+        int textYPos = buttonY + 7;
+        
+        TextRenderer.drawString(buttonText, drawContext, textXPos, textYPos, 
+            isEnabled ? new Color(255, 255, 255, 255).getRGB() : new Color(200, 200, 200, 255).getRGB());
         
         // Glow effect for enabled modules
-        if (this.module != null && this.module.isEnabled()) {
+        if (isEnabled) {
             RenderUtils.renderRoundedQuad(drawContext.getMatrices(), URANIUM_GLOW,
-                toggleX - 1, toggleY - 1, toggleX + toggleWidth + 1, toggleY + toggleHeight + 1, 10, 10, 10, 10, 30);
+                buttonX - 1, buttonY - 1, buttonX + buttonWidth + 1, buttonY + buttonHeight + 1, 12, 12, 12, 12, 30);
         }
     }
 
@@ -296,12 +304,12 @@ public final class ModuleButton {
         
         if (this.isHovered(mouseX, mouseY)) {
             if (button == 0) {
-                final int toggleX = this.parent.getX() + this.parent.getWidth() - 42;
-                final int toggleY = this.parent.getY() + this.offset + this.parent.getHeight() / 2 - 9;
-                final int toggleWidth = 32;
-                final int toggleHeight = 18;
+                final int buttonX = this.parent.getX() + this.parent.getWidth() - 55;
+                final int buttonY = this.parent.getY() + this.offset + this.parent.getHeight() / 2 - 12;
+                final int buttonWidth = 45;
+                final int buttonHeight = 22;
                 
-                if (mouseX >= toggleX && mouseX <= toggleX + toggleWidth && mouseY >= toggleY && mouseY <= toggleY + toggleHeight) {
+                if (mouseX >= buttonX && mouseX <= buttonX + buttonWidth && mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
                     this.module.toggle();
                 } else if (this.module.getSettings() != null && !this.module.getSettings().isEmpty() && mouseX > this.parent.getX() + this.parent.getWidth() - 25) {
                     if (!this.extended) {
