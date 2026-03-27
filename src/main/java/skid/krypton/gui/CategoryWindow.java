@@ -20,6 +20,7 @@ public final class CategoryWindow {
     private final int height;
     public Color currentColor;
     private final Category category;
+    public boolean dragging = false; // Added back but always false
     public boolean extended;
     public ClickGUI parent;
     private float hoverAnimation;
