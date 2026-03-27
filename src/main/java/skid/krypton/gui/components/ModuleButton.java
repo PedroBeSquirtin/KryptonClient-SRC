@@ -33,8 +33,7 @@ public final class ModuleButton {
     private final Color GLOW_GREEN = new Color(80, 220, 80, 70);
     private final Color BUTTON_ON = new Color(80, 220, 80, 255);
     private final Color BUTTON_OFF = new Color(55, 55, 65, 200);
-    private final Color TEXT_WHITE = new Color(255, 255, 255, 245);
-    private final Color TEXT_GREEN = new Color(80, 220, 80, 255);
+    private final Color TEXT_WHITE = new Color(255, 255, 255, 255);
     
     private float hoverAnimation;
     private float enabledAnimation;
@@ -172,36 +171,40 @@ public final class ModuleButton {
     private void renderModuleInfo(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
         if (this.module == null) return;
         
-        // Module name - left aligned
+        // Module name - left aligned with accent
         String moduleName = this.module.getName() != null ? this.module.getName().toString() : "";
         int textY = y + height / 2 - 4;
+        
+        // Draw module name in white
         drawText(drawContext, moduleName, x + 12, textY, TEXT_WHITE.getRGB());
         
-        // Smooth ON/OFF Button - perfectly centered vertically
-        final int buttonWidth = 38;
-        final int buttonHeight = 20;
+        // ON/OFF Button - perfectly centered
+        final int buttonWidth = 42;
+        final int buttonHeight = 22;
         final int buttonX = x + width - buttonWidth - 12;
         final int buttonY = y + (height - buttonHeight) / 2;
         
         boolean isEnabled = this.module != null && this.module.isEnabled();
         
-        // Button background with smooth gradient
+        // Button background
         Color buttonBg = isEnabled ? BUTTON_ON : BUTTON_OFF;
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), buttonBg,
-            buttonX, buttonY, buttonX + buttonWidth, buttonY + buttonHeight, 10, 10, 10, 10, 30);
+            buttonX, buttonY, buttonX + buttonWidth, buttonY + buttonHeight, 11, 11, 11, 11, 30);
         
-        // Button text
+        // Button text - perfectly centered
         String buttonText = isEnabled ? "ON" : "OFF";
         int textWidth = getTextWidth(buttonText);
         int textXPos = buttonX + (buttonWidth - textWidth) / 2;
         int textYPos = buttonY + (buttonHeight - 8) / 2;
         
-        drawText(drawContext, buttonText, textXPos, textYPos, TEXT_WHITE.getRGB());
+        // Draw button text - bright white for ON, slightly dim for OFF
+        int textColor = isEnabled ? 0xFFFFFF : 0xAAAAAA;
+        drawText(drawContext, buttonText, textXPos, textYPos, textColor);
         
-        // Smooth glow effect for enabled modules
+        // Glow effect for enabled modules
         if (isEnabled) {
             RenderUtils.renderRoundedQuad(drawContext.getMatrices(), GLOW_GREEN,
-                buttonX - 2, buttonY - 2, buttonX + buttonWidth + 2, buttonY + buttonHeight + 2, 12, 12, 12, 12, 30);
+                buttonX - 1, buttonY - 1, buttonX + buttonWidth + 1, buttonY + buttonHeight + 1, 12, 12, 12, 12, 30);
         }
         
         // Left accent indicator for enabled modules
@@ -304,8 +307,8 @@ public final class ModuleButton {
         if (this.parent == null || this.module == null) return;
         
         if (this.isHovered(mouseX, mouseY)) {
-            final int buttonWidth = 38;
-            final int buttonHeight = 20;
+            final int buttonWidth = 42;
+            final int buttonHeight = 22;
             final int buttonX = this.parent.getX() + this.parent.getWidth() - buttonWidth - 12;
             final int buttonY = this.parent.getY() + this.offset + (this.parent.getHeight() - buttonHeight) / 2;
             
