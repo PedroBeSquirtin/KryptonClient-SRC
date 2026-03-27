@@ -232,8 +232,15 @@ public final class ModuleButton {
     }
 
     public void keyPressed(final int keyCode, final int scanCode, final int modifiers) {
-        for (Component component : this.settings) {
-            component.keyPressed(keyCode, scanCode, modifiers);
+        // Ignore invalid key codes
+        if (keyCode <= 0) return;
+        
+        try {
+            for (Component component : this.settings) {
+                component.keyPressed(keyCode, scanCode, modifiers);
+            }
+        } catch (Exception e) {
+            // Silently catch errors to prevent crashes
         }
     }
 
