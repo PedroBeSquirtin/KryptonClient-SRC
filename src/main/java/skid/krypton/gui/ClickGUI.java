@@ -21,16 +21,16 @@ public final class ClickGUI extends Screen {
     private int tooltipX;
     private int tooltipY;
     
-    // Uranium Green Color Scheme
-    private final Color DESCRIPTION_BG = new Color(20, 25, 20, 245);
-    private final Color ACCENT = new Color(80, 200, 80, 255);
-    private final Color ACCENT_DARK = new Color(50, 150, 50, 255);
-    private final Color ACCENT_GLOW = new Color(80, 200, 80, 60);
-    private final Color HEADER_BG = new Color(15, 20, 15, 250);
+    // Brighter Uranium Green Color Scheme
+    private final Color DESCRIPTION_BG = new Color(20, 28, 20, 245);
+    private final Color ACCENT = new Color(100, 255, 100, 255);
+    private final Color ACCENT_BRIGHT = new Color(120, 255, 120, 255);
+    private final Color ACCENT_GLOW = new Color(100, 255, 100, 80);
+    private final Color ACCENT_DARK = new Color(70, 200, 70, 255);
     
-    // Window positioning
+    // Window positioning - fixed positions (no dragging)
     private static final int WINDOW_START_X = 50;
-    private static final int WINDOW_START_Y = 50;
+    private static final int WINDOW_START_Y = 80;
     private static final int WINDOW_WIDTH = 240;
     private static final int WINDOW_HEIGHT = 30;
     private static final int WINDOW_SPACING = 20;
@@ -48,12 +48,7 @@ public final class ClickGUI extends Screen {
     }
 
     public boolean isDraggingAlready() {
-        for (CategoryWindow window : this.windows) {
-            if (window.dragging) {
-                return true;
-            }
-        }
-        return false;
+        return false; // Disabled dragging
     }
 
     public void setTooltip(final CharSequence tooltipText, final int tooltipX, final int tooltipY) {
@@ -98,7 +93,6 @@ public final class ClickGUI extends Screen {
             
             for (CategoryWindow window : this.windows) {
                 window.render(drawContext, scaledMouseX, scaledMouseY, delta);
-                window.updatePosition(scaledMouseX, scaledMouseY, delta);
             }
             
             if (this.tooltipText != null) {
@@ -112,28 +106,26 @@ public final class ClickGUI extends Screen {
     
     private void renderUraniumHeader(DrawContext context) {
         int screenWidth = Krypton.mc.getWindow().getWidth();
-        int headerY = 12;
+        int headerY = 20;
         
         String logo = "URANIUM";
         int logoWidth = TextRenderer.getWidth(logo);
         int logoX = screenWidth / 2 - logoWidth / 2;
         
+        // Glow effect
         RenderUtils.renderRoundedQuad(context.getMatrices(), ACCENT_GLOW,
-            logoX - 25, headerY - 8, logoX + logoWidth + 25, headerY + 32, 25, 25, 25, 25, 50);
+            logoX - 25, headerY - 5, logoX + logoWidth + 25, headerY + 35, 20, 20, 20, 20, 50);
         
+        // Logo with gradient
         for (int i = 0; i < logo.length(); i++) {
             float progress = (float) i / logo.length();
             Color gradientColor = lerpColor(ACCENT, ACCENT_DARK, progress);
             TextRenderer.drawString(String.valueOf(logo.charAt(i)), context,
-                logoX + (i * 14), headerY + 8, toMCColor(gradientColor));
+                logoX + (i * 14), headerY + 12, toMCColor(gradientColor));
         }
         
-        String version = "URANIUM EDITION";
-        int versionWidth = TextRenderer.getWidth(version);
-        TextRenderer.drawString(version, context,
-            screenWidth / 2 - versionWidth / 2, headerY + 32, toMCColor(new Color(140, 180, 140, 255)));
-        
-        context.fill(logoX - 25, headerY + 48, logoX + logoWidth + 25, headerY + 49, ACCENT.getRGB());
+        // Accent line
+        context.fill(logoX - 25, headerY + 42, logoX + logoWidth + 25, headerY + 43, ACCENT.getRGB());
     }
     
     private void renderModernTooltip(DrawContext context, CharSequence text, int x, int y) {
@@ -162,11 +154,11 @@ public final class ClickGUI extends Screen {
             tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight,
             8, 8, 8, 8, 50);
         
-        RenderUtils.renderRoundedQuad(context.getMatrices(), new Color(80, 200, 80, 60),
+        RenderUtils.renderRoundedQuad(context.getMatrices(), new Color(100, 255, 100, 80),
             tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight,
             8, 8, 8, 8, 30);
         
-        TextRenderer.drawString(text, context, x, y + 4, toMCColor(new Color(220, 240, 220, 255)));
+        TextRenderer.drawString(text, context, x, y + 4, toMCColor(new Color(220, 255, 220, 255)));
     }
     
     private Color lerpColor(Color c1, Color c2, float t) {
