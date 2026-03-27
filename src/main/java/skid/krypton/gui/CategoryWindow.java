@@ -31,14 +31,7 @@ public final class CategoryWindow {
     private final Color URANIUM_ACCENT = new Color(100, 255, 100, 255);
     private final Color URANIUM_HOVER = new Color(100, 255, 100, 30);
     private final Color URANIUM_BORDER = new Color(80, 120, 80, 150);
-    
-    // Icons for categories
-    private final String COMBAT_ICON = "⚔️";
-    private final String MOVEMENT_ICON = "🏃";
-    private final String PLAYER_ICON = "👤";
-    private final String RENDER_ICON = "👁️";
-    private final String WORLD_ICON = "🌍";
-    private final String CLIENT_ICON = "💎";
+    private final Color URANIUM_TEXT = new Color(220, 255, 220, 255);
 
     public CategoryWindow(final int x, final int y, final int width, final int height, final Category category, final ClickGUI parent) {
         this.moduleButtons = new ArrayList<>();
@@ -52,12 +45,13 @@ public final class CategoryWindow {
         this.parent = parent;
 
         try {
-            final List<Module> modules = new ArrayList<>(Krypton.INSTANCE.getModuleManager().a(category));
+            List<Module> modules = Krypton.INSTANCE.getModuleManager().a(category);
             int offset = height;
 
             for (Module module : modules) {
                 if (module != null) {
-                    this.moduleButtons.add(new ModuleButton(this, module, offset));
+                    ModuleButton button = new ModuleButton(this, module, offset);
+                    this.moduleButtons.add(button);
                     offset += height;
                 }
             }
@@ -90,19 +84,19 @@ public final class CategoryWindow {
                 this.x, this.y, this.x + this.width, this.y + this.height, 
                 topRadius, topRadius, bottomRadius, bottomRadius, 50.0);
             
-            // Header with icon
+            // Header background
             context.fill(this.x, this.y, this.x + this.width, this.y + 32, URANIUM_HEADER.getRGB());
             
-            // Get icon for category
-            String icon = getCategoryIcon(this.category);
-            String categoryName = this.category.name != null ? this.category.name.toString().toUpperCase() : "";
-            String fullText = icon + " " + categoryName;
-            int textX = this.x + (this.width - TextRenderer.getWidth(fullText)) / 2;
-            int textY = this.y + 10;
+            // Draw category name directly without icon first to test
+            String categoryName = this.category.name.toString();
             
-            // Shadow text effect
-            TextRenderer.drawString(fullText, context, textX + 1, textY + 1, new Color(0, 0, 0, 100).getRGB());
-            TextRenderer.drawString(fullText, context, textX, textY, URANIUM_ACCENT.getRGB());
+            // Calculate text position
+            int textX = this.x + (this.width - TextRenderer.getWidth(categoryName)) / 2;
+            int textY = this.y + 12;
+            
+            // Draw text with shadow
+            TextRenderer.drawString(categoryName, context, textX + 1, textY + 1, new Color(0, 0, 0, 100).getRGB());
+            TextRenderer.drawString(categoryName, context, textX, textY, URANIUM_ACCENT.getRGB());
             
             // Bottom accent line for header
             context.fill(this.x, this.y + 31, this.x + this.width, this.y + 32, URANIUM_ACCENT.getRGB());
@@ -119,20 +113,6 @@ public final class CategoryWindow {
             }
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-    
-    private String getCategoryIcon(Category category) {
-        if (category == null || category.name == null) return "◆";
-        String name = category.name.toString().toLowerCase();
-        switch (name) {
-            case "combat": return COMBAT_ICON;
-            case "movement": return MOVEMENT_ICON;
-            case "player": return PLAYER_ICON;
-            case "render": return RENDER_ICON;
-            case "world": return WORLD_ICON;
-            case "client": return CLIENT_ICON;
-            default: return "◆";
         }
     }
     
