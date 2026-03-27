@@ -22,36 +22,42 @@ public final class ClickGUI extends Screen {
     private boolean searchFocused;
     private boolean draggingSlider;
     private Setting draggingSliderSetting;
-    private float animationProgress = 0f;
     private Map<Module, Float> moduleAnimations = new HashMap<>();
+    private Module hoveredModule = null;
+    private String hoverDescription = "";
+    private int hoverDescriptionX = 0, hoverDescriptionY = 0;
+    private long hoverStartTime = 0;
 
     private static final Color TRANSPARENT = new Color(0, 0, 0, 0);
 
-    // Modern Uranium Color Scheme
-    private final Color BACKGROUND_COLOR = new Color(8, 8, 12, 240);
-    private final Color PANEL_COLOR = new Color(15, 15, 22, 245);
-    private final Color ACCENT_COLOR = new Color(0, 230, 180, 255); // Fresh teal
-    private final Color ACCENT_DARK = new Color(0, 180, 140, 255);
-    private final Color ACCENT_GLOW = new Color(0, 230, 180, 80);
-    private final Color SELECTED_COLOR = new Color(0, 230, 180, 30);
-    private final Color TEXT_COLOR = new Color(235, 235, 245, 255);
-    private final Color TEXT_SECONDARY = new Color(150, 150, 170, 255);
-    private final Color SEARCH_BG = new Color(25, 25, 35, 255);
-    private final Color HOVER_COLOR = new Color(0, 230, 180, 15);
-    private final Color MODULE_ON_COLOR = new Color(0, 230, 180, 255);
-    private final Color MODULE_OFF_COLOR = new Color(45, 45, 60, 255);
+    // Professional, clean color scheme with high contrast
+    private final Color BACKGROUND_DARK = new Color(12, 12, 16, 245);
+    private final Color PANEL_BG = new Color(22, 22, 28, 250);
+    private final Color ACCENT = new Color(88, 166, 255, 255);
+    private final Color ACCENT_HOVER = new Color(108, 186, 255, 255);
+    private final Color ACCENT_GLOW = new Color(88, 166, 255, 25);
+    private final Color SELECTION_BG = new Color(88, 166, 255, 20);
+    private final Color TEXT_WHITE = new Color(255, 255, 255, 245);
+    private final Color TEXT_GRAY = new Color(200, 200, 210, 255);
+    private final Color TEXT_DARK_GRAY = new Color(140, 140, 160, 255);
+    private final Color SEARCH_BG = new Color(32, 32, 40, 255);
+    private final Color HOVER_BG = new Color(88, 166, 255, 12);
+    private final Color BORDER_LIGHT = new Color(55, 55, 70, 100);
+    private final Color TOOLTIP_BG = new Color(28, 28, 36, 250);
+    private final Color MODULE_ON_INDICATOR = new Color(76, 217, 100, 255);
+    private final Color MODULE_OFF_INDICATOR = new Color(80, 80, 95, 255);
 
-    // Modern Layout with more spacing
-    private static final int SETTINGS_PANEL_WIDTH = 340;
-    private static final int CATEGORY_PANEL_WIDTH = 160;
-    private static final int MODULE_PANEL_WIDTH = 380;
-    private static final int HEADER_HEIGHT = 60;
-    private static final int ITEM_HEIGHT = 40;
-    private static final int PADDING = 20;
-    private static final int PANEL_SPACING = 24;
-    private static final int CORNER_RADIUS = 16;
-    private static final int TOTAL_WIDTH = SETTINGS_PANEL_WIDTH + CATEGORY_PANEL_WIDTH + MODULE_PANEL_WIDTH + (PANEL_SPACING * 2);
-    private static final int TOTAL_HEIGHT = 540;
+    // Optimized dimensions for perfect fitting
+    private static final int SETTINGS_WIDTH = 350;
+    private static final int CATEGORY_WIDTH = 165;
+    private static final int MODULE_WIDTH = 385;
+    private static final int HEADER_H = 50;
+    private static final int ITEM_H = 36;
+    private static final int PAD = 16;
+    private static final int SPACING = 18;
+    private static final int RADIUS = 10;
+    private static final int TOTAL_W = SETTINGS_WIDTH + CATEGORY_WIDTH + MODULE_WIDTH + (SPACING * 2);
+    private static final int TOTAL_H = 520;
 
     public ClickGUI() {
         super(Text.empty());
@@ -66,545 +72,525 @@ public final class ClickGUI extends Screen {
         return net.minecraft.util.math.ColorHelper.Argb.getArgb(c.getAlpha(), c.getRed(), c.getGreen(), c.getBlue());
     }
 
-    public boolean isDraggingAlready() {
-        return this.draggingSlider;
-    }
-
-    public void setTooltip(final CharSequence tooltipText, final int tooltipX, final int tooltipY) {
-        // Modern tooltip handling
-    }
-
-    public void setInitialFocus() {
-        if (this.client == null) return;
-        super.setInitialFocus();
-    }
-
-    public void render(final DrawContext drawContext, final int n, final int n2, final float n3) {
-        if (Krypton.mc.currentScreen == this) {
-            if (Krypton.INSTANCE.screen != null) {
-                Krypton.INSTANCE.screen.render(drawContext, 0, 0, n3);
-            }
-            
-            // Smooth animation
-            animationProgress += (0.1f - animationProgress) * 0.1f;
-            
-            if (this.currentColor == null) {
-                this.currentColor = new Color(0, 0, 0, 0);
-            } else {
-                this.currentColor = new Color(0, 0, 0, this.currentColor.getAlpha());
-            }
-
-            int targetAlpha = skid.krypton.module.modules.client.Krypton.renderBackground.getValue() ? 180 : 0;
-            if (this.currentColor.getAlpha() != targetAlpha) {
-                this.currentColor = ColorUtil.a(0.05f, targetAlpha, this.currentColor);
-            }
-            
-            if (Krypton.mc.currentScreen instanceof ClickGUI) {
-                drawContext.fill(0, 0, Krypton.mc.getWindow().getWidth(), Krypton.mc.getWindow().getHeight(), this.currentColor.getRGB());
-            }
-            
-            RenderUtils.unscaledProjection();
-            final int scaledMouseX = n * (int) MinecraftClient.getInstance().getWindow().getScaleFactor();
-            final int scaledMouseY = n2 * (int) MinecraftClient.getInstance().getWindow().getScaleFactor();
-            super.render(drawContext, scaledMouseX, scaledMouseY, n3);
-
-            this.renderBackground(drawContext);
-            this.renderModernHeader(drawContext);
-            this.renderSettingsPanel(drawContext, scaledMouseX, scaledMouseY);
-            this.renderCategoryPanel(drawContext, scaledMouseX, scaledMouseY);
-            this.renderModulePanel(drawContext, scaledMouseX, scaledMouseY);
-
-            RenderUtils.scaledProjection();
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        if (Krypton.mc.currentScreen != this) return;
+        
+        if (Krypton.INSTANCE.screen != null) {
+            Krypton.INSTANCE.screen.render(context, 0, 0, delta);
         }
+        
+        if (this.currentColor == null) {
+            this.currentColor = new Color(0, 0, 0, 0);
+        }
+        
+        int targetAlpha = skid.krypton.module.modules.client.Krypton.renderBackground.getValue() ? 200 : 0;
+        if (this.currentColor.getAlpha() != targetAlpha) {
+            this.currentColor = ColorUtil.a(0.05f, targetAlpha, this.currentColor);
+        }
+        
+        if (Krypton.mc.currentScreen instanceof ClickGUI) {
+            context.fill(0, 0, Krypton.mc.getWindow().getWidth(), Krypton.mc.getWindow().getHeight(), this.currentColor.getRGB());
+        }
+        
+        RenderUtils.unscaledProjection();
+        int scaledMouseX = (int)(mouseX * MinecraftClient.getInstance().getWindow().getScaleFactor());
+        int scaledMouseY = (int)(mouseY * MinecraftClient.getInstance().getWindow().getScaleFactor());
+        super.render(context, scaledMouseX, scaledMouseY, delta);
+        
+        renderBackgroundGradient(context);
+        renderMainPanels(context, scaledMouseX, scaledMouseY);
+        renderHoverDescription(context, scaledMouseX, scaledMouseY);
+        
+        RenderUtils.scaledProjection();
     }
-
-    private void renderBackground(final DrawContext drawContext) {
-        final int screenWidth = Krypton.mc.getWindow().getWidth();
-        final int screenHeight = Krypton.mc.getWindow().getHeight();
-
+    
+    private void renderBackgroundGradient(DrawContext context) {
+        int width = Krypton.mc.getWindow().getWidth();
+        int height = Krypton.mc.getWindow().getHeight();
+        
         if (skid.krypton.module.modules.client.Krypton.renderBackground.getValue()) {
-            // Gradient background
-            for (int i = 0; i < screenHeight; i++) {
-                float ratio = (float) i / screenHeight;
-                int alpha = (int) (80 * (1 - ratio));
-                drawContext.fill(0, i, screenWidth, i + 1, new Color(0, 0, 0, alpha).getRGB());
+            for (int i = 0; i < height; i++) {
+                float ratio = (float)i / height;
+                int alpha = (int)(70 * (1 - ratio * 0.5f));
+                context.fill(0, i, width, i + 1, new Color(8, 8, 12, alpha).getRGB());
             }
         }
     }
-
-    private void renderModernHeader(final DrawContext drawContext) {
-        final int screenWidth = Krypton.mc.getWindow().getWidth();
-        final int headerHeight = 80;
+    
+    private void renderMainPanels(DrawContext context, int mouseX, int mouseY) {
+        int screenW = Krypton.mc.getWindow().getWidth();
+        int screenH = Krypton.mc.getWindow().getHeight();
+        int baseX = (screenW - TOTAL_W) / 2;
+        int baseY = (screenH - TOTAL_H) / 2;
         
-        // Glow effect
-        RenderUtils.renderRoundedQuad(drawContext.getMatrices(), ACCENT_GLOW,
-                screenWidth / 2 - 200, 20, screenWidth / 2 + 200, 70, 40, 40, 40, 40, 50);
+        // Settings panel (right side)
+        renderSettingsPanel(context, baseX, baseY, mouseX, mouseY);
         
-        // Title with gradient effect
+        // Category panel (middle)
+        renderCategoryPanel(context, baseX + SETTINGS_WIDTH + SPACING, baseY, mouseX, mouseY);
+        
+        // Module panel (left side)
+        renderModulePanel(context, baseX + SETTINGS_WIDTH + SPACING + CATEGORY_WIDTH + SPACING, baseY, mouseX, mouseY);
+        
+        // Header (top)
+        renderHeader(context, screenW, baseY);
+    }
+    
+    private void renderHeader(DrawContext context, int screenW, int baseY) {
         String title = "URANIUM";
-        String subtitle = "PREMIUM CLIENT";
+        String version = "v2.0";
+        int titleX = screenW / 2 - TextRenderer.getWidth(title) / 2;
         
-        for (int i = 0; i < title.length(); i++) {
-            float progress = (float) i / title.length();
-            Color gradientColor = lerpColor(ACCENT_COLOR, ACCENT_DARK, progress);
-            TextRenderer.drawString(String.valueOf(title.charAt(i)), drawContext,
-                    screenWidth / 2 - 60 + (i * 14), 35, toMCColor(gradientColor));
+        TextRenderer.drawString(title, context, titleX, baseY - 28, toMCColor(TEXT_WHITE));
+        TextRenderer.drawString(version, context, titleX + TextRenderer.getWidth(title) + 8, baseY - 26, toMCColor(TEXT_DARK_GRAY));
+        
+        // Accent underline
+        int underlineY = baseY - 10;
+        context.fill(titleX - 8, underlineY, titleX + TextRenderer.getWidth(title) + 8, underlineY + 2, toMCColor(ACCENT));
+    }
+    
+    private void renderSettingsPanel(DrawContext context, int x, int y, int mouseX, int mouseY) {
+        renderPanel(context, x, y, SETTINGS_WIDTH, TOTAL_H);
+        
+        // Panel header
+        drawPanelHeader(context, x, y, "SETTINGS");
+        
+        if (selectedModule == null) {
+            TextRenderer.drawCenteredString("Select a module", context, 
+                x + SETTINGS_WIDTH / 2, y + TOTAL_H / 2, toMCColor(TEXT_DARK_GRAY));
+            return;
         }
         
-        TextRenderer.drawString(subtitle, drawContext,
-                screenWidth / 2 - 40, 55, toMCColor(TEXT_SECONDARY));
-    }
-
-    private void renderSettingsPanel(final DrawContext drawContext, final int mouseX, final int mouseY) {
-        final int screenWidth = Krypton.mc.getWindow().getWidth();
-        final int screenHeight = Krypton.mc.getWindow().getHeight();
-        final int startX = (screenWidth - TOTAL_WIDTH) / 2;
-        final int startY = (screenHeight - TOTAL_HEIGHT) / 2 + 20;
-        final int endX = startX + SETTINGS_PANEL_WIDTH;
-        final int endY = startY + TOTAL_HEIGHT;
-
-        // Panel with shadow
-        renderShadow(drawContext, startX, startY, SETTINGS_PANEL_WIDTH, TOTAL_HEIGHT);
-        RenderUtils.renderRoundedQuad(drawContext.getMatrices(), PANEL_COLOR,
-                startX, startY, endX, endY, CORNER_RADIUS, CORNER_RADIUS, CORNER_RADIUS, CORNER_RADIUS, 200);
-
-        // Header
-        drawVerticalGradient(drawContext, startX, startY, SETTINGS_PANEL_WIDTH, HEADER_HEIGHT, ACCENT_COLOR, ACCENT_DARK);
-        TextRenderer.drawString("MODULE SETTINGS", drawContext,
-                startX + PADDING, startY + 22, toMCColor(Color.WHITE));
-
-        if (this.selectedModule != null) {
-            int yOffset = startY + HEADER_HEIGHT + PADDING;
+        int yOffset = y + HEADER_H + 12;
+        
+        // Module name
+        TextRenderer.drawString(selectedModule.getName().toString(), context, 
+            x + PAD, yOffset, toMCColor(ACCENT));
+        yOffset += 28;
+        
+        for (Object setting : selectedModule.getSettings()) {
+            if (!(setting instanceof Setting)) continue;
             
-            // Module name display
-            TextRenderer.drawString(this.selectedModule.getName().toString().toUpperCase(), drawContext,
-                    startX + PADDING, yOffset - 10, toMCColor(ACCENT_COLOR));
-
-            for (Object setting : this.selectedModule.getSettings()) {
-                if (setting instanceof Setting) {
-                    final Setting s = (Setting) setting;
-                    final boolean isHovered = this.isHoveredInRect(mouseX, mouseY, startX, yOffset, SETTINGS_PANEL_WIDTH, ITEM_HEIGHT);
-
-                    if (isHovered && !this.draggingSlider) {
-                        RenderUtils.renderRoundedQuad(drawContext.getMatrices(), HOVER_COLOR,
-                                startX + 8, yOffset, endX - 8, yOffset + ITEM_HEIGHT, 8, 8, 8, 8, 30);
-                    }
-
-                    TextRenderer.drawString(s.getName().toString(), drawContext,
-                            startX + PADDING, yOffset + 12, toMCColor(TEXT_COLOR));
-
-                    this.renderModernSettingValue(drawContext, setting, startX, endX, yOffset, mouseX, mouseY);
-
-                    yOffset += ITEM_HEIGHT + 8;
-                }
+            Setting s = (Setting) setting;
+            boolean hovered = isHovered(mouseX, mouseY, x, yOffset, SETTINGS_WIDTH, ITEM_H);
+            
+            if (hovered && !draggingSlider) {
+                renderHoverHighlight(context, x + 4, yOffset, SETTINGS_WIDTH - 8, ITEM_H);
             }
-        } else {
-            TextRenderer.drawCenteredString("SELECT A MODULE", drawContext,
-                    startX + SETTINGS_PANEL_WIDTH / 2, startY + 200, toMCColor(TEXT_SECONDARY));
+            
+            // Setting name with better visibility
+            TextRenderer.drawString(s.getName().toString(), context, 
+                x + PAD, yOffset + 10, toMCColor(TEXT_GRAY));
+            
+            renderSettingControl(context, setting, x, yOffset, mouseX, mouseY);
+            
+            yOffset += ITEM_H + 6;
         }
     }
-
-    private void renderModernSettingValue(final DrawContext drawContext, final Object setting, 
-                                          final int startX, final int endX, final int yOffset, 
-                                          final int mouseX, final int mouseY) {
+    
+    private void renderSettingControl(DrawContext context, Object setting, int x, int y, int mouseX, int mouseY) {
+        int controlX = x + SETTINGS_WIDTH - PAD - 10;
+        
         if (setting instanceof BooleanSetting) {
-            final BooleanSetting boolSetting = (BooleanSetting) setting;
-            final boolean value = boolSetting.getValue();
+            BooleanSetting bool = (BooleanSetting) setting;
+            boolean value = bool.getValue();
             
-            // Modern toggle switch
-            final int toggleX = endX - 60;
-            final int toggleY = yOffset + 8;
-            final int toggleWidth = 50;
-            final int toggleHeight = 24;
+            // Toggle switch
+            int toggleW = 48, toggleH = 24;
+            int toggleX = controlX - toggleW;
+            int toggleY = y + 6;
             
             // Background
-            Color bgColor = value ? ACCENT_COLOR : new Color(50, 50, 65, 255);
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), bgColor,
-                    toggleX, toggleY, toggleX + toggleWidth, toggleY + toggleHeight, 12, 12, 12, 12, 30);
+            Color bgColor = value ? ACCENT : new Color(45, 45, 55, 255);
+            RenderUtils.renderRoundedQuad(context.getMatrices(), bgColor,
+                toggleX, toggleY, toggleX + toggleW, toggleY + toggleH, 12, 12, 12, 12, 30);
             
             // Handle
-            int handleX = value ? toggleX + toggleWidth - 20 : toggleX + 4;
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), Color.WHITE,
-                    handleX, toggleY + 2, handleX + 16, toggleY + toggleHeight - 2, 10, 10, 10, 10, 30);
-                    
+            int handleX = value ? toggleX + toggleW - 18 : toggleX + 4;
+            RenderUtils.renderRoundedQuad(context.getMatrices(), Color.WHITE,
+                handleX, toggleY + 3, handleX + 14, toggleY + toggleH - 3, 10, 10, 10, 10, 30);
+                
         } else if (setting instanceof NumberSetting) {
-            final NumberSetting numSetting = (NumberSetting) setting;
-            final String valueText = String.format("%.1f", numSetting.getValue());
+            NumberSetting num = (NumberSetting) setting;
+            String valueText = String.format("%.2f", num.getValue());
             
             // Value display
-            TextRenderer.drawString(valueText, drawContext,
-                    endX - PADDING - 40, yOffset + 12, toMCColor(ACCENT_COLOR));
+            int valueWidth = TextRenderer.getWidth(valueText);
+            TextRenderer.drawString(valueText, context, 
+                controlX - valueWidth - 8, y + 10, toMCColor(ACCENT));
             
-            // Modern slider
-            final int sliderY = yOffset + 30;
-            final int sliderStartX = startX + PADDING;
-            final int sliderEndX = endX - PADDING - 45;
-            final int sliderWidth = sliderEndX - sliderStartX;
+            // Slider
+            int sliderW = 120, sliderH = 4;
+            int sliderX = controlX - sliderW - valueWidth - 12;
+            int sliderY = y + 16;
             
             // Track
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), new Color(40, 40, 50, 255),
-                    sliderStartX, sliderY, sliderEndX, sliderY + 4, 2, 2, 2, 2, 20);
+            RenderUtils.renderRoundedQuad(context.getMatrices(), new Color(45, 45, 55, 255),
+                sliderX, sliderY, sliderX + sliderW, sliderY + sliderH, 2, 2, 2, 2, 20);
             
             // Progress
-            final double progress = (numSetting.getValue() - numSetting.getMin()) / (numSetting.getMax() - numSetting.getMin());
-            final int progressWidth = (int) (sliderWidth * progress);
-            if (progressWidth > 0) {
-                RenderUtils.renderRoundedQuad(drawContext.getMatrices(), ACCENT_COLOR,
-                        sliderStartX, sliderY, sliderStartX + progressWidth, sliderY + 4, 2, 2, 2, 2, 20);
+            double progress = (num.getValue() - num.getMin()) / (num.getMax() - num.getMin());
+            int progressW = (int)(sliderW * progress);
+            if (progressW > 0) {
+                RenderUtils.renderRoundedQuad(context.getMatrices(), ACCENT,
+                    sliderX, sliderY, sliderX + progressW, sliderY + sliderH, 2, 2, 2, 2, 20);
             }
             
             // Handle
-            final int handleX = sliderStartX + progressWidth - 4;
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), Color.WHITE,
-                    handleX, sliderY - 4, handleX + 8, sliderY + 10, 6, 6, 6, 6, 30);
-                    
+            int handleX = sliderX + progressW - 3;
+            RenderUtils.renderRoundedQuad(context.getMatrices(), Color.WHITE,
+                handleX, sliderY - 3, handleX + 6, sliderY + sliderH + 3, 4, 4, 4, 4, 30);
+                
         } else if (setting instanceof ModeSetting) {
-            final ModeSetting<?> modeSetting = (ModeSetting<?>) setting;
-            final String valueText = modeSetting.getValue().toString();
+            ModeSetting<?> mode = (ModeSetting<?>) setting;
+            String value = mode.getValue().toString();
+            int valueW = TextRenderer.getWidth(value);
+            int pillX = controlX - valueW - 20;
+            int pillY = y + 4;
             
-            // Modern pill background
-            int textWidth = TextRenderer.getWidth(valueText);
-            int pillX = endX - PADDING - textWidth - 20;
-            int pillY = yOffset + 6;
+            RenderUtils.renderRoundedQuad(context.getMatrices(), ACCENT,
+                pillX, pillY, pillX + valueW + 20, pillY + 24, 12, 12, 12, 12, 30);
             
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), ACCENT_COLOR,
-                    pillX, pillY, pillX + textWidth + 20, pillY + 22, 11, 11, 11, 11, 30);
-            
-            TextRenderer.drawString(valueText, drawContext,
-                    pillX + 10, pillY + 7, toMCColor(Color.WHITE));
+            TextRenderer.drawString(value, context, 
+                pillX + 10, pillY + 8, toMCColor(Color.WHITE));
         }
     }
-
-    private void renderCategoryPanel(final DrawContext drawContext, final int mouseX, final int mouseY) {
-        final int screenWidth = Krypton.mc.getWindow().getWidth();
-        final int screenHeight = Krypton.mc.getWindow().getHeight();
-        final int startX = (screenWidth - TOTAL_WIDTH) / 2 + SETTINGS_PANEL_WIDTH + PANEL_SPACING;
-        final int startY = (screenHeight - TOTAL_HEIGHT) / 2 + 20;
-        final int endX = startX + CATEGORY_PANEL_WIDTH;
-        final int endY = startY + TOTAL_HEIGHT;
-
-        renderShadow(drawContext, startX, startY, CATEGORY_PANEL_WIDTH, TOTAL_HEIGHT);
-        RenderUtils.renderRoundedQuad(drawContext.getMatrices(), PANEL_COLOR,
-                startX, startY, endX, endY, CORNER_RADIUS, CORNER_RADIUS, CORNER_RADIUS, CORNER_RADIUS, 200);
-
-        TextRenderer.drawString("CATEGORIES", drawContext, 
-                startX + PADDING, startY + 22, toMCColor(ACCENT_COLOR));
-
-        int yOffset = startY + HEADER_HEIGHT + PADDING;
-        for (Category category : Category.values()) {
-            final boolean isSelected = category == this.selectedCategory;
-            final boolean isHovered = this.isHoveredInRect(mouseX, mouseY, startX, yOffset, CATEGORY_PANEL_WIDTH, ITEM_HEIGHT);
-
-            if (isSelected) {
-                // Left accent bar
-                drawContext.fill(startX + 4, yOffset + 8, startX + 6, yOffset + ITEM_HEIGHT - 8, toMCColor(ACCENT_COLOR));
-                RenderUtils.renderRoundedQuad(drawContext.getMatrices(), SELECTED_COLOR,
-                        startX + 8, yOffset, endX - 8, yOffset + ITEM_HEIGHT, 8, 8, 8, 8, 30);
-            } else if (isHovered) {
-                RenderUtils.renderRoundedQuad(drawContext.getMatrices(), HOVER_COLOR,
-                        startX + 8, yOffset, endX - 8, yOffset + ITEM_HEIGHT, 8, 8, 8, 8, 30);
-            }
-
-            Color textColor = isSelected ? ACCENT_COLOR : TEXT_COLOR;
-            TextRenderer.drawString(category.name.toString(), drawContext,
-                    startX + PADDING + 10, yOffset + 12, toMCColor(textColor));
-
-            yOffset += ITEM_HEIGHT + 5;
-        }
-    }
-
-    private void renderModulePanel(final DrawContext drawContext, final int mouseX, final int mouseY) {
-        final int screenWidth = Krypton.mc.getWindow().getWidth();
-        final int screenHeight = Krypton.mc.getWindow().getHeight();
-        final int startX = (screenWidth - TOTAL_WIDTH) / 2 + SETTINGS_PANEL_WIDTH + PANEL_SPACING + CATEGORY_PANEL_WIDTH + PANEL_SPACING;
-        final int startY = (screenHeight - TOTAL_HEIGHT) / 2 + 20;
-        final int endX = startX + MODULE_PANEL_WIDTH;
-        final int endY = startY + TOTAL_HEIGHT;
-
-        renderShadow(drawContext, startX, startY, MODULE_PANEL_WIDTH, TOTAL_HEIGHT);
-        RenderUtils.renderRoundedQuad(drawContext.getMatrices(), PANEL_COLOR,
-                startX, startY, endX, endY, CORNER_RADIUS, CORNER_RADIUS, CORNER_RADIUS, CORNER_RADIUS, 200);
-
-        // Category header
-        TextRenderer.drawString(this.selectedCategory.name.toString().toUpperCase(), drawContext,
-                startX + PADDING, startY + 22, toMCColor(ACCENT_COLOR));
-
-        // Modern search bar
-        final int searchY = startY + HEADER_HEIGHT - 5;
-        final int searchStartX = startX + PADDING;
-        final int searchEndX = endX - PADDING;
+    
+    private void renderCategoryPanel(DrawContext context, int x, int y, int mouseX, int mouseY) {
+        renderPanel(context, x, y, CATEGORY_WIDTH, TOTAL_H);
+        drawPanelHeader(context, x, y, "CATEGORIES");
         
-        RenderUtils.renderRoundedQuad(drawContext.getMatrices(), SEARCH_BG,
-                searchStartX, searchY, searchEndX, searchY + 36, 18, 18, 18, 18, 30);
+        int yOffset = y + HEADER_H + 8;
+        
+        for (Category category : Category.values()) {
+            boolean selected = category == selectedCategory;
+            boolean hovered = isHovered(mouseX, mouseY, x, yOffset, CATEGORY_WIDTH, ITEM_H);
+            
+            if (selected) {
+                // Left accent bar
+                context.fill(x + 2, yOffset + 8, x + 4, yOffset + ITEM_H - 8, toMCColor(ACCENT));
+                renderSelectionHighlight(context, x + 6, yOffset, CATEGORY_WIDTH - 12, ITEM_H);
+            } else if (hovered) {
+                renderHoverHighlight(context, x + 6, yOffset, CATEGORY_WIDTH - 12, ITEM_H);
+            }
+            
+            Color textColor = selected ? ACCENT : TEXT_GRAY;
+            TextRenderer.drawString(category.name.toString(), context,
+                x + PAD + 8, yOffset + 10, toMCColor(textColor));
+            
+            yOffset += ITEM_H + 4;
+        }
+    }
+    
+    private void renderModulePanel(DrawContext context, int x, int y, int mouseX, int mouseY) {
+        renderPanel(context, x, y, MODULE_WIDTH, TOTAL_H);
+        drawPanelHeader(context, x, y, selectedCategory.name.toString().toUpperCase());
+        
+        // Search bar
+        int searchY = y + HEADER_H + 4;
+        int searchW = MODULE_WIDTH - PAD * 2;
+        int searchH = 32;
+        
+        RenderUtils.renderRoundedQuad(context.getMatrices(), SEARCH_BG,
+            x + PAD, searchY, x + PAD + searchW, searchY + searchH, 16, 16, 16, 16, 30);
         
         // Search icon
-        TextRenderer.drawString("🔍", drawContext, searchStartX + 12, searchY + 10, toMCColor(TEXT_SECONDARY));
+        TextRenderer.drawString("🔍", context, x + PAD + 10, searchY + 8, toMCColor(TEXT_DARK_GRAY));
         
-        final String searchText = this.searchQuery.isEmpty() ? "Search modules..." : this.searchQuery;
-        final Color searchTextColor = this.searchQuery.isEmpty() ? TEXT_SECONDARY : TEXT_COLOR;
-        TextRenderer.drawString(searchText, drawContext, searchStartX + 32, searchY + 12, toMCColor(searchTextColor));
-
-        if (this.searchFocused && System.currentTimeMillis() % 1000 < 500) {
-            final int cursorX = searchStartX + 32 + TextRenderer.getWidth(this.searchQuery);
-            drawContext.fill(cursorX, searchY + 8, cursorX + 2, searchY + 28, toMCColor(ACCENT_COLOR));
+        String searchText = searchQuery.isEmpty() ? "Search modules..." : searchQuery;
+        Color searchColor = searchQuery.isEmpty() ? TEXT_DARK_GRAY : TEXT_GRAY;
+        TextRenderer.drawString(searchText, context, x + PAD + 32, searchY + 9, toMCColor(searchColor));
+        
+        if (searchFocused && (System.currentTimeMillis() / 500) % 2 == 0) {
+            int cursorX = x + PAD + 32 + TextRenderer.getWidth(searchQuery);
+            context.fill(cursorX, searchY + 6, cursorX + 1, searchY + 26, toMCColor(ACCENT));
         }
-
-        final List<Module> modules = Krypton.INSTANCE.getModuleManager().a(this.selectedCategory);
-        int yOffset = startY + HEADER_HEIGHT + 45;
-
-        for (Module module : modules) {
-            if (!this.searchQuery.isEmpty() && !module.getName().toString().toLowerCase().contains(this.searchQuery.toLowerCase())) {
+        
+        // Modules list
+        List<Module> modules = Krypton.INSTANCE.getModuleManager().a(selectedCategory);
+        int yOffset = searchY + searchH + 12;
+        int maxModules = (TOTAL_H - (yOffset - y) - 12) / (ITEM_H + 4);
+        
+        hoveredModule = null;
+        
+        for (int i = 0; i < Math.min(modules.size(), maxModules); i++) {
+            Module module = modules.get(i);
+            
+            if (!searchQuery.isEmpty() && !module.getName().toString().toLowerCase().contains(searchQuery.toLowerCase())) {
                 continue;
             }
-
-            final boolean isSelected = module == this.selectedModule;
-            final boolean isHovered = this.isHoveredInRect(mouseX, mouseY, startX, yOffset, MODULE_PANEL_WIDTH, ITEM_HEIGHT);
-            final boolean isEnabled = module.isEnabled();
             
-            // Animation for module items
-            moduleAnimations.putIfAbsent(module, 0f);
-            float target = isHovered ? 1f : 0f;
-            float current = moduleAnimations.get(module);
-            current += (target - current) * 0.2f;
-            moduleAnimations.put(module, current);
-
-            if (isSelected) {
-                RenderUtils.renderRoundedQuad(drawContext.getMatrices(), SELECTED_COLOR,
-                        startX + 8, yOffset, endX - 8, yOffset + ITEM_HEIGHT, 8, 8, 8, 8, 30);
-            } else if (current > 0.01f) {
-                int alpha = (int) (15 * current);
-                RenderUtils.renderRoundedQuad(drawContext.getMatrices(), new Color(0, 230, 180, alpha),
-                        startX + 8, yOffset, endX - 8, yOffset + ITEM_HEIGHT, 8, 8, 8, 8, 30);
-            }
-
-            // Module name
-            Color textColor = isEnabled ? ACCENT_COLOR : TEXT_COLOR;
-            TextRenderer.drawString(module.getName().toString(), drawContext,
-                    startX + PADDING, yOffset + 12, toMCColor(textColor));
+            boolean selected = module == selectedModule;
+            boolean hovered = isHovered(mouseX, mouseY, x, yOffset, MODULE_WIDTH, ITEM_H);
+            boolean enabled = module.isEnabled();
             
-            // Module description (if any)
-            if (module.getDescription() != null && !module.getDescription().isEmpty()) {
-                TextRenderer.drawString(module.getDescription(), drawContext,
-                        startX + PADDING, yOffset + 28, toMCColor(TEXT_SECONDARY));
+            if (hovered) {
+                hoveredModule = module;
+                if (System.currentTimeMillis() - hoverStartTime > 300) {
+                    hoverDescription = module.getDescription() != null ? module.getDescription() : "";
+                    hoverDescriptionX = mouseX + 12;
+                    hoverDescriptionY = mouseY + 8;
+                }
             }
-
-            // Modern status indicator
-            Color indicatorColor = isEnabled ? ACCENT_COLOR : MODULE_OFF_COLOR;
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), indicatorColor,
-                    endX - 30, yOffset + 12, endX - 18, yOffset + 28, 6, 6, 6, 6, 30);
             
-            if (isEnabled) {
-                // Glow effect for enabled modules
-                RenderUtils.renderRoundedQuad(drawContext.getMatrices(), ACCENT_GLOW,
-                        endX - 32, yOffset + 10, endX - 16, yOffset + 30, 8, 8, 8, 8, 30);
+            // Background
+            if (selected) {
+                renderSelectionHighlight(context, x + 4, yOffset, MODULE_WIDTH - 8, ITEM_H);
+            } else if (hovered) {
+                renderHoverHighlight(context, x + 4, yOffset, MODULE_WIDTH - 8, ITEM_H);
             }
-
-            yOffset += ITEM_HEIGHT + 5;
+            
+            // Module name with enhanced visibility
+            Color nameColor = enabled ? ACCENT : TEXT_WHITE;
+            TextRenderer.drawString(module.getName().toString(), context,
+                x + PAD, yOffset + 10, toMCColor(nameColor));
+            
+            // Status indicator
+            Color indicatorColor = enabled ? MODULE_ON_INDICATOR : MODULE_OFF_INDICATOR;
+            int indicatorX = x + MODULE_WIDTH - PAD - 12;
+            RenderUtils.renderRoundedQuad(context.getMatrices(), indicatorColor,
+                indicatorX, yOffset + 12, indicatorX + 8, yOffset + 24, 4, 4, 4, 4, 30);
+            
+            if (enabled) {
+                RenderUtils.renderRoundedQuad(context.getMatrices(), ACCENT_GLOW,
+                    indicatorX - 2, yOffset + 10, indicatorX + 10, yOffset + 26, 6, 6, 6, 6, 30);
+            }
+            
+            yOffset += ITEM_H + 4;
         }
     }
-
-    private void renderShadow(DrawContext context, int x, int y, int width, int height) {
-        for (int i = 0; i < 8; i++) {
-            int alpha = (int) (20 * (1 - (float) i / 8));
+    
+    private void renderHoverDescription(DrawContext context, int mouseX, int mouseY) {
+        if (hoveredModule != null && !hoverDescription.isEmpty() && System.currentTimeMillis() - hoverStartTime > 300) {
+            int textW = TextRenderer.getWidth(hoverDescription);
+            int tooltipW = textW + 24;
+            int tooltipH = 28;
+            int tooltipX = Math.min(mouseX + 12, Krypton.mc.getWindow().getWidth() - tooltipW - 10);
+            int tooltipY = mouseY + 16;
+            
+            RenderUtils.renderRoundedQuad(context.getMatrices(), TOOLTIP_BG,
+                tooltipX, tooltipY, tooltipX + tooltipW, tooltipY + tooltipH, 6, 6, 6, 6, 50);
+            
+            TextRenderer.drawString(hoverDescription, context,
+                tooltipX + 12, tooltipY + 8, toMCColor(TEXT_GRAY));
+        } else {
+            hoverStartTime = System.currentTimeMillis();
+        }
+    }
+    
+    private void renderPanel(DrawContext context, int x, int y, int width, int height) {
+        // Shadow
+        for (int i = 1; i <= 4; i++) {
+            int alpha = 20 - i * 3;
             context.fill(x - i, y - i, x + width + i, y + height + i, new Color(0, 0, 0, alpha).getRGB());
         }
+        
+        RenderUtils.renderRoundedQuad(context.getMatrices(), PANEL_BG,
+            x, y, x + width, y + height, RADIUS, RADIUS, RADIUS, RADIUS, 50);
+        
+        // Border
+        RenderUtils.renderRoundedQuad(context.getMatrices(), BORDER_LIGHT,
+            x, y, x + width, y + height, RADIUS, RADIUS, RADIUS, RADIUS, 20);
     }
-
-    private void drawVerticalGradient(DrawContext context, int x, int y, int width, int height, Color top, Color bottom) {
-        for (int i = 0; i < height; i++) {
-            float ratio = (float) i / height;
-            Color color = lerpColor(top, bottom, ratio);
-            context.fill(x, y + i, x + width, y + i + 1, toMCColor(color));
+    
+    private void drawPanelHeader(DrawContext context, int x, int y, String title) {
+        context.fill(x, y, x + (title.equals("SETTINGS") ? SETTINGS_WIDTH : 
+                     title.equals("CATEGORIES") ? CATEGORY_WIDTH : MODULE_WIDTH), 
+                     y + HEADER_H, toMCColor(new Color(28, 28, 35, 255)));
+        
+        TextRenderer.drawString(title, context, x + PAD, y + 18, toMCColor(TEXT_WHITE));
+        
+        // Bottom border
+        context.fill(x, y + HEADER_H - 1, x + (title.equals("SETTINGS") ? SETTINGS_WIDTH : 
+                    title.equals("CATEGORIES") ? CATEGORY_WIDTH : MODULE_WIDTH), 
+                    y + HEADER_H, toMCColor(ACCENT));
+    }
+    
+    private void renderSelectionHighlight(DrawContext context, int x, int y, int w, int h) {
+        RenderUtils.renderRoundedQuad(context.getMatrices(), SELECTION_BG, x, y, x + w, y + h, 6, 6, 6, 6, 30);
+    }
+    
+    private void renderHoverHighlight(DrawContext context, int x, int y, int w, int h) {
+        RenderUtils.renderRoundedQuad(context.getMatrices(), HOVER_BG, x, y, x + w, y + h, 6, 6, 6, 6, 30);
+    }
+    
+    private boolean isHovered(int mouseX, int mouseY, int x, int y, int w, int h) {
+        return mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
+    }
+    
+    private boolean isSearchBarHovered(int mouseX, int mouseY) {
+        int screenW = Krypton.mc.getWindow().getWidth();
+        int screenH = Krypton.mc.getWindow().getHeight();
+        int baseX = (screenW - TOTAL_W) / 2;
+        int baseY = (screenH - TOTAL_H) / 2;
+        int moduleX = baseX + SETTINGS_WIDTH + SPACING + CATEGORY_WIDTH + SPACING;
+        int searchX = moduleX + PAD;
+        int searchY = baseY + HEADER_H + 4;
+        int searchW = MODULE_WIDTH - PAD * 2;
+        int searchH = 32;
+        
+        return isHovered(mouseX, mouseY, searchX, searchY, searchW, searchH);
+    }
+    
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        int scaledX = (int)(mouseX * MinecraftClient.getInstance().getWindow().getScaleFactor());
+        int scaledY = (int)(mouseY * MinecraftClient.getInstance().getWindow().getScaleFactor());
+        
+        int screenW = Krypton.mc.getWindow().getWidth();
+        int screenH = Krypton.mc.getWindow().getHeight();
+        int baseX = (screenW - TOTAL_W) / 2;
+        int baseY = (screenH - TOTAL_H) / 2;
+        
+        // Search focus
+        searchFocused = isSearchBarHovered(scaledX, scaledY);
+        
+        // Category clicks
+        int catX = baseX + SETTINGS_WIDTH + SPACING;
+        int catY = baseY + HEADER_H + 8;
+        for (Category category : Category.values()) {
+            if (isHovered(scaledX, scaledY, catX, catY, CATEGORY_WIDTH, ITEM_H)) {
+                selectedCategory = category;
+                selectedModule = null;
+                return true;
+            }
+            catY += ITEM_H + 4;
+        }
+        
+        // Module clicks
+        int moduleX = baseX + SETTINGS_WIDTH + SPACING + CATEGORY_WIDTH + SPACING;
+        int moduleY = baseY + HEADER_H + 4 + 32 + 12;
+        List<Module> modules = Krypton.INSTANCE.getModuleManager().a(selectedCategory);
+        
+        for (Module module : modules) {
+            if (!searchQuery.isEmpty() && !module.getName().toString().toLowerCase().contains(searchQuery.toLowerCase())) {
+                continue;
+            }
+            
+            if (isHovered(scaledX, scaledY, moduleX, moduleY, MODULE_WIDTH, ITEM_H)) {
+                if (button == 0) {
+                    module.toggle();
+                } else if (button == 1) {
+                    selectedModule = module;
+                }
+                return true;
+            }
+            moduleY += ITEM_H + 4;
+        }
+        
+        // Settings clicks
+        if (selectedModule != null) {
+            int settingsX = baseX;
+            int settingsY = baseY + HEADER_H + 12 + 28;
+            
+            for (Object setting : selectedModule.getSettings()) {
+                if (!(setting instanceof Setting)) continue;
+                
+                if (isHovered(scaledX, scaledY, settingsX, settingsY, SETTINGS_WIDTH, ITEM_H)) {
+                    handleSettingClick(setting, button, scaledX, scaledY, settingsX, settingsY);
+                    return true;
+                }
+                settingsY += ITEM_H + 6;
+            }
+        }
+        
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+    
+    private void handleSettingClick(Object setting, int button, int mouseX, int mouseY, int panelX, int settingY) {
+        if (setting instanceof BooleanSetting) {
+            ((BooleanSetting) setting).toggle();
+        } else if (setting instanceof ModeSetting) {
+            ModeSetting<?> mode = (ModeSetting<?>) setting;
+            if (button == 0) mode.cycleUp();
+            else if (button == 1) mode.cycleDown();
+        } else if (setting instanceof NumberSetting) {
+            NumberSetting num = (NumberSetting) setting;
+            int sliderY = settingY + 16;
+            int controlX = panelX + SETTINGS_WIDTH - PAD - 10;
+            String valueText = String.format("%.2f", num.getValue());
+            int valueWidth = TextRenderer.getWidth(valueText);
+            int sliderW = 120;
+            int sliderX = controlX - sliderW - valueWidth - 12;
+            
+            if (isHovered(mouseX, mouseY, sliderX, sliderY - 5, sliderW, 14)) {
+                draggingSlider = true;
+                draggingSliderSetting = (Setting) setting;
+                updateSliderValue(num, mouseX, sliderX, sliderX + sliderW);
+            }
         }
     }
-
-    private Color lerpColor(Color c1, Color c2, float t) {
-        int r = (int) (c1.getRed() + (c2.getRed() - c1.getRed()) * t);
-        int g = (int) (c1.getGreen() + (c2.getGreen() - c1.getGreen()) * t);
-        int b = (int) (c1.getBlue() + (c2.getBlue() - c1.getBlue()) * t);
-        return new Color(r, g, b);
+    
+    private void updateSliderValue(NumberSetting setting, int mouseX, int startX, int endX) {
+        double progress = Math.max(0, Math.min(1, (double)(mouseX - startX) / (endX - startX)));
+        double newValue = setting.getMin() + progress * (setting.getMax() - setting.getMin());
+        setting.getValue(MathUtil.roundToNearest(newValue, setting.getFormat()));
     }
-
-    private boolean isHoveredInRect(final int mouseX, final int mouseY, final int x, final int y, final int width, final int height) {
-        return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
+    
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (draggingSlider && draggingSliderSetting instanceof NumberSetting) {
+            int scaledX = (int)(mouseX * MinecraftClient.getInstance().getWindow().getScaleFactor());
+            int screenW = Krypton.mc.getWindow().getWidth();
+            int screenH = Krypton.mc.getWindow().getHeight();
+            int baseX = (screenW - TOTAL_W) / 2;
+            
+            int controlX = baseX + SETTINGS_WIDTH - PAD - 10;
+            String valueText = String.format("%.2f", ((NumberSetting) draggingSliderSetting).getValue());
+            int valueWidth = TextRenderer.getWidth(valueText);
+            int sliderW = 120;
+            int sliderX = controlX - sliderW - valueWidth - 12;
+            
+            updateSliderValue((NumberSetting) draggingSliderSetting, scaledX, sliderX, sliderX + sliderW);
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
-
-    private boolean isSearchBarHovered(final int mouseX, final int mouseY) {
-        final int screenWidth = Krypton.mc.getWindow().getWidth();
-        final int screenHeight = Krypton.mc.getWindow().getHeight();
-        final int startX = (screenWidth - TOTAL_WIDTH) / 2 + SETTINGS_PANEL_WIDTH + PANEL_SPACING + CATEGORY_PANEL_WIDTH + PANEL_SPACING;
-        final int startY = (screenHeight - TOTAL_HEIGHT) / 2 + 20;
-        final int searchY = startY + HEADER_HEIGHT - 5;
-        final int searchStartX = startX + PADDING;
-        final int searchEndX = startX + MODULE_PANEL_WIDTH - PADDING;
-        
-        return this.isHoveredInRect(mouseX, mouseY, searchStartX, searchY, searchEndX - searchStartX, 36);
+    
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (draggingSlider) {
+            draggingSlider = false;
+            draggingSliderSetting = null;
+            return true;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
     }
-
-    public boolean keyPressed(final int keyCode, final int scanCode, final int modifiers) {
-        if (this.searchFocused) {
-            if (keyCode == 259 && !this.searchQuery.isEmpty()) {
-                this.searchQuery = this.searchQuery.substring(0, this.searchQuery.length() - 1);
+    
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (searchFocused) {
+            if (keyCode == 259 && !searchQuery.isEmpty()) {
+                searchQuery = searchQuery.substring(0, searchQuery.length() - 1);
                 return true;
             } else if (keyCode == 256) {
-                this.searchFocused = false;
+                searchFocused = false;
                 return true;
             }
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
-
-    public boolean charTyped(final char chr, final int modifiers) {
-        if (this.searchFocused && (Character.isLetterOrDigit(chr) || chr == ' ')) {
-            this.searchQuery += chr;
+    
+    public boolean charTyped(char chr, int modifiers) {
+        if (searchFocused && (Character.isLetterOrDigit(chr) || chr == ' ')) {
+            searchQuery += chr;
             return true;
         }
         return super.charTyped(chr, modifiers);
     }
-
-    public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
-        final double scaledMouseX = mouseX * MinecraftClient.getInstance().getWindow().getScaleFactor();
-        final double scaledMouseY = mouseY * MinecraftClient.getInstance().getWindow().getScaleFactor();
-
-        final int screenWidth = Krypton.mc.getWindow().getWidth();
-        final int screenHeight = Krypton.mc.getWindow().getHeight();
-
-        if (this.isSearchBarHovered((int) scaledMouseX, (int) scaledMouseY)) {
-            this.searchFocused = true;
-            return true;
-        } else {
-            this.searchFocused = false;
-        }
-
-        // Category panel clicks
-        final int categoryStartX = (screenWidth - TOTAL_WIDTH) / 2 + SETTINGS_PANEL_WIDTH + PANEL_SPACING;
-        final int categoryStartY = (screenHeight - TOTAL_HEIGHT) / 2 + 20 + HEADER_HEIGHT + PADDING;
-        int categoryY = categoryStartY;
-
-        for (Category category : Category.values()) {
-            if (this.isHoveredInRect((int) scaledMouseX, (int) scaledMouseY, categoryStartX, categoryY, CATEGORY_PANEL_WIDTH, ITEM_HEIGHT)) {
-                this.selectedCategory = category;
-                this.selectedModule = null;
-                return true;
-            }
-            categoryY += ITEM_HEIGHT + 5;
-        }
-
-        // Module panel clicks
-        final int modulePanelStartX = (screenWidth - TOTAL_WIDTH) / 2 + SETTINGS_PANEL_WIDTH + PANEL_SPACING + CATEGORY_PANEL_WIDTH + PANEL_SPACING;
-        final int modulePanelStartY = (screenHeight - TOTAL_HEIGHT) / 2 + 20 + HEADER_HEIGHT + 45;
-        final List<Module> modules = Krypton.INSTANCE.getModuleManager().a(this.selectedCategory);
-        int moduleY = modulePanelStartY;
-
-        for (Module module : modules) {
-            if (!this.searchQuery.isEmpty() && !module.getName().toString().toLowerCase().contains(this.searchQuery.toLowerCase())) {
-                continue;
-            }
-
-            if (this.isHoveredInRect((int) scaledMouseX, (int) scaledMouseY, modulePanelStartX, moduleY, MODULE_PANEL_WIDTH, ITEM_HEIGHT)) {
-                if (button == 0) {
-                    module.toggle();
-                } else if (button == 1) {
-                    this.selectedModule = module;
-                }
-                return true;
-            }
-            moduleY += ITEM_HEIGHT + 5;
-        }
-
-        // Settings panel clicks
-        if (this.selectedModule != null) {
-            final int settingsPanelStartX = (screenWidth - TOTAL_WIDTH) / 2;
-            final int settingsPanelStartY = (screenHeight - TOTAL_HEIGHT) / 2 + 20 + HEADER_HEIGHT + PADDING;
-            int settingY = settingsPanelStartY;
-
-            for (Object setting : this.selectedModule.getSettings()) {
-                if (setting instanceof Setting) {
-                    if (this.isHoveredInRect((int) scaledMouseX, (int) scaledMouseY, settingsPanelStartX, settingY, SETTINGS_PANEL_WIDTH, ITEM_HEIGHT)) {
-                        this.handleModernSettingClick(setting, button, (int) scaledMouseX, (int) scaledMouseY, settingsPanelStartX, settingY);
-                        return true;
-                    }
-                    settingY += ITEM_HEIGHT + 8;
-                }
-            }
-        }
-
-        return super.mouseClicked(scaledMouseX, scaledMouseY, button);
-    }
-
-    private void handleModernSettingClick(final Object setting, final int button, final int mouseX, final int mouseY, final int panelX, final int settingY) {
-        if (setting instanceof BooleanSetting) {
-            final BooleanSetting boolSetting = (BooleanSetting) setting;
-            if (button == 0) {
-                boolSetting.toggle();
-            }
-        } else if (setting instanceof ModeSetting) {
-            final ModeSetting<?> modeSetting = (ModeSetting<?>) setting;
-            if (button == 0) {
-                modeSetting.cycleUp();
-            } else if (button == 1) {
-                modeSetting.cycleDown();
-            }
-        } else if (setting instanceof NumberSetting) {
-            final NumberSetting numSetting = (NumberSetting) setting;
-            final int sliderY = settingY + 30;
-            final int sliderStartX = panelX + PADDING;
-            final int sliderEndX = panelX + SETTINGS_PANEL_WIDTH - PADDING - 45;
-            
-            if (this.isHoveredInRect(mouseX, mouseY, sliderStartX, sliderY - 5, sliderEndX - sliderStartX, 14)) {
-                this.draggingSlider = true;
-                this.draggingSliderSetting = (Setting) setting;
-                this.updateSliderValue(numSetting, mouseX, sliderStartX, sliderEndX);
-            }
-        }
-    }
-
-    private void updateSliderValue(final NumberSetting setting, final int mouseX, final int sliderStartX, final int sliderEndX) {
-        final double progress = Math.max(0.0, Math.min(1.0, (double) (mouseX - sliderStartX) / (sliderEndX - sliderStartX)));
-        final double newValue = setting.getMin() + progress * (setting.getMax() - setting.getMin());
-        setting.getValue(MathUtil.roundToNearest(newValue, setting.getFormat()));
-    }
-
-    public boolean mouseDragged(final double mouseX, final double mouseY, final int button, final double deltaX, final double deltaY) {
-        if (this.draggingSlider && this.draggingSliderSetting != null) {
-            final double scaledMouseX = mouseX * MinecraftClient.getInstance().getWindow().getScaleFactor();
-            final int screenWidth = Krypton.mc.getWindow().getWidth();
-            final int screenHeight = Krypton.mc.getWindow().getHeight();
-            final int settingsPanelStartX = (screenWidth - TOTAL_WIDTH) / 2;
-            final int sliderStartX = settingsPanelStartX + PADDING;
-            final int sliderEndX = settingsPanelStartX + SETTINGS_PANEL_WIDTH - PADDING - 45;
-            
-            if (this.draggingSliderSetting instanceof NumberSetting) {
-                this.updateSliderValue((NumberSetting) this.draggingSliderSetting, (int) scaledMouseX, sliderStartX, sliderEndX);
-            }
-            return true;
-        }
-        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
-    }
-
-    public boolean mouseReleased(final double mouseX, final double mouseY, final int button) {
-        if (this.draggingSlider) {
-            this.draggingSlider = false;
-            this.draggingSliderSetting = null;
-            return true;
-        }
-        return super.mouseReleased(mouseX, mouseY, button);
-    }
-
+    
     public boolean shouldPause() {
         return false;
     }
-
+    
     public void close() {
         Krypton.INSTANCE.getModuleManager().getModuleByClass(skid.krypton.module.modules.client.Krypton.class).setEnabled(false);
-        this.onGuiClose();
+        onGuiClose();
     }
-
+    
     public void onGuiClose() {
         Krypton.mc.setScreenAndRender(Krypton.INSTANCE.screen);
-        this.currentColor = null;
-        this.searchFocused = false;
-        this.draggingSlider = false;
-        this.draggingSliderSetting = null;
+        currentColor = null;
+        searchFocused = false;
+        draggingSlider = false;
+        draggingSliderSetting = null;
+        hoveredModule = null;
+        hoverDescription = "";
     }
 }
