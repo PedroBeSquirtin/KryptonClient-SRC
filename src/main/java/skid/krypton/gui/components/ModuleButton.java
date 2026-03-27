@@ -26,20 +26,19 @@ public final class ModuleButton {
     public Color currentAlpha;
     public Animation animation;
     
-    // Brighter Uranium Green Color Scheme
-    private final Color URANIUM_ACCENT = new Color(100, 255, 100, 255);
-    private final Color URANIUM_HOVER = new Color(100, 255, 100, 25);
-    private final Color URANIUM_ENABLED = new Color(100, 255, 100, 255);
-    private final Color URANIUM_DISABLED = new Color(170, 200, 170, 255);
-    private final Color URANIUM_BG = new Color(25, 35, 25, 235);
-    private final Color URANIUM_BORDER = new Color(70, 100, 70, 150);
-    private final Color URANIUM_GLOW = new Color(100, 255, 100, 80);
-    private final Color BUTTON_ON = new Color(80, 200, 80, 255);
-    private final Color BUTTON_OFF = new Color(80, 80, 80, 200);
+    // Clean Green Color Scheme
+    private final Color MODULE_BG = new Color(22, 30, 22, 235);
+    private final Color HOVER_BG = new Color(80, 220, 80, 20);
+    private final Color BORDER_COLOR = new Color(65, 95, 65, 120);
+    private final Color GLOW_GREEN = new Color(80, 220, 80, 70);
+    private final Color BUTTON_ON = new Color(80, 220, 80, 255);
+    private final Color BUTTON_OFF = new Color(55, 55, 65, 200);
+    private final Color TEXT_WHITE = new Color(255, 255, 255, 245);
+    private final Color TEXT_GREEN = new Color(80, 220, 80, 255);
     
     private float hoverAnimation;
     private float enabledAnimation;
-    private static final float CORNER_RADIUS = 8.0f;
+    private static final float CORNER_RADIUS = 6.0f;
 
     public ModuleButton(final CategoryWindow parent, final Module module, final int offset) {
         this.settings = new ArrayList<>();
@@ -104,12 +103,10 @@ public final class ModuleButton {
             final int width = this.parent.getWidth();
             final int height = this.parent.getHeight();
             
-            // Check if button is within screen bounds
             if (y + height < 0 || y > MinecraftClient.getInstance().getWindow().getHeight()) {
                 return;
             }
             
-            // Update settings components
             if (this.settings != null) {
                 for (Component component : this.settings) {
                     if (component != null) {
@@ -121,14 +118,12 @@ public final class ModuleButton {
             this.updateAnimations(mouseX, mouseY, delta);
             
             this.renderButtonBackground(drawContext, x, y, width, height);
-            this.renderIndicator(drawContext, x, y, height);
             this.renderModuleInfo(drawContext, x, y, width, height);
             
             if (this.extended && this.settings != null) {
                 this.renderSettings(drawContext, mouseX, mouseY, delta);
             }
             
-            // Tooltip on hover
             if (this.isHovered(mouseX, mouseY)) {
                 CharSequence description = this.module.getDescription();
                 if (description != null && description.length() > 0 && Krypton.INSTANCE.GUI != null) {
@@ -152,9 +147,8 @@ public final class ModuleButton {
     }
 
     private void renderButtonBackground(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
-        final Color bgColor = ColorUtil.a(URANIUM_BG, URANIUM_HOVER, this.hoverAnimation);
+        final Color bgColor = ColorUtil.a(MODULE_BG, HOVER_BG, this.hoverAnimation);
         
-        // Check if this is the last button
         boolean isLast = false;
         if (this.parent != null && this.parent.moduleButtons != null && this.parent.moduleButtons.size() > 0) {
             isLast = this.parent.moduleButtons.get(this.parent.moduleButtons.size() - 1) == this;
@@ -170,58 +164,50 @@ public final class ModuleButton {
             drawContext.fill(x, y, x + width, y + height, bgColor.getRGB());
         }
         
-        // Separator line
         if (this.parent != null && this.parent.moduleButtons != null && this.parent.moduleButtons.indexOf(this) > 0) {
-            drawContext.fill(x + 8, y, x + width - 8, y + 1, URANIUM_BORDER.getRGB());
-        }
-    }
-
-    private void renderIndicator(final DrawContext drawContext, final int x, final int y, final int height) {
-        Color color = (this.module != null && this.module.isEnabled()) ? URANIUM_ENABLED : URANIUM_ACCENT;
-        
-        final float indicatorWidth = 4.0f * this.enabledAnimation;
-        if (indicatorWidth > 0.1f) {
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), 
-                ColorUtil.a(URANIUM_DISABLED, color, this.enabledAnimation), 
-                x, y + 2, x + indicatorWidth, y + height - 2, 
-                2.0f, 2.0f, 2.0f, 2.0f, 60.0);
+            drawContext.fill(x + 8, y, x + width - 8, y + 1, BORDER_COLOR.getRGB());
         }
     }
 
     private void renderModuleInfo(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
         if (this.module == null) return;
         
-        // Module name
-        Color nameColor = ColorUtil.a(URANIUM_DISABLED, URANIUM_ENABLED, this.enabledAnimation);
+        // Module name - left aligned
         String moduleName = this.module.getName() != null ? this.module.getName().toString() : "";
-        drawText(drawContext, moduleName, x + 12, y + height / 2 - 5, nameColor.getRGB());
+        int textY = y + height / 2 - 4;
+        drawText(drawContext, moduleName, x + 12, textY, TEXT_WHITE.getRGB());
         
-        // ON/OFF Toggle Button
-        final int buttonX = x + width - 55;
-        final int buttonY = y + height / 2 - 12;
-        final int buttonWidth = 45;
-        final int buttonHeight = 22;
+        // Smooth ON/OFF Button - perfectly centered vertically
+        final int buttonWidth = 38;
+        final int buttonHeight = 20;
+        final int buttonX = x + width - buttonWidth - 12;
+        final int buttonY = y + (height - buttonHeight) / 2;
         
         boolean isEnabled = this.module != null && this.module.isEnabled();
         
-        // Background with rounded corners
+        // Button background with smooth gradient
         Color buttonBg = isEnabled ? BUTTON_ON : BUTTON_OFF;
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), buttonBg,
-            buttonX, buttonY, buttonX + buttonWidth, buttonY + buttonHeight, 11, 11, 11, 11, 30);
+            buttonX, buttonY, buttonX + buttonWidth, buttonY + buttonHeight, 10, 10, 10, 10, 30);
         
-        // ON/OFF Text
+        // Button text
         String buttonText = isEnabled ? "ON" : "OFF";
         int textWidth = getTextWidth(buttonText);
         int textXPos = buttonX + (buttonWidth - textWidth) / 2;
-        int textYPos = buttonY + 7;
+        int textYPos = buttonY + (buttonHeight - 8) / 2;
         
-        drawText(drawContext, buttonText, textXPos, textYPos, 
-            isEnabled ? new Color(255, 255, 255, 255).getRGB() : new Color(200, 200, 200, 255).getRGB());
+        drawText(drawContext, buttonText, textXPos, textYPos, TEXT_WHITE.getRGB());
         
-        // Glow effect for enabled modules
+        // Smooth glow effect for enabled modules
         if (isEnabled) {
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), URANIUM_GLOW,
-                buttonX - 1, buttonY - 1, buttonX + buttonWidth + 1, buttonY + buttonHeight + 1, 12, 12, 12, 12, 30);
+            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), GLOW_GREEN,
+                buttonX - 2, buttonY - 2, buttonX + buttonWidth + 2, buttonY + buttonHeight + 2, 12, 12, 12, 12, 30);
+        }
+        
+        // Left accent indicator for enabled modules
+        if (isEnabled) {
+            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), BUTTON_ON,
+                x + 4, y + 4, x + 6, y + height - 4, 2, 2, 2, 2, 30);
         }
     }
 
@@ -318,12 +304,12 @@ public final class ModuleButton {
         if (this.parent == null || this.module == null) return;
         
         if (this.isHovered(mouseX, mouseY)) {
+            final int buttonWidth = 38;
+            final int buttonHeight = 20;
+            final int buttonX = this.parent.getX() + this.parent.getWidth() - buttonWidth - 12;
+            final int buttonY = this.parent.getY() + this.offset + (this.parent.getHeight() - buttonHeight) / 2;
+            
             if (button == 0) {
-                final int buttonX = this.parent.getX() + this.parent.getWidth() - 55;
-                final int buttonY = this.parent.getY() + this.offset + this.parent.getHeight() / 2 - 12;
-                final int buttonWidth = 45;
-                final int buttonHeight = 22;
-                
                 if (mouseX >= buttonX && mouseX <= buttonX + buttonWidth && mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
                     this.module.toggle();
                 } else if (this.module.getSettings() != null && !this.module.getSettings().isEmpty() && mouseX > this.parent.getX() + this.parent.getWidth() - 25) {
