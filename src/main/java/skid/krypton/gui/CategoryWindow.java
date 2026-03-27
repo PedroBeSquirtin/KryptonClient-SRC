@@ -20,21 +20,24 @@ public final class CategoryWindow {
     private final int height;
     public Color currentColor;
     private final Category category;
-    public boolean dragging;
     public boolean extended;
-    private int dragX;
-    private int dragY;
-    private int prevX;
-    private int prevY;
     public ClickGUI parent;
     private float hoverAnimation;
     
-    // Uranium Green Color Scheme
-    private final Color URANIUM_BG = new Color(18, 23, 18, 245);
-    private final Color URANIUM_HEADER = new Color(23, 30, 23, 255);
-    private final Color URANIUM_ACCENT = new Color(80, 200, 80, 255);
-    private final Color URANIUM_HOVER = new Color(80, 200, 80, 20);
-    private final Color URANIUM_BORDER = new Color(50, 70, 50, 100);
+    // Brighter Uranium Green Color Scheme
+    private final Color URANIUM_BG = new Color(20, 28, 20, 245);
+    private final Color URANIUM_HEADER = new Color(28, 38, 28, 255);
+    private final Color URANIUM_ACCENT = new Color(100, 255, 100, 255);
+    private final Color URANIUM_HOVER = new Color(100, 255, 100, 30);
+    private final Color URANIUM_BORDER = new Color(80, 120, 80, 150);
+    
+    // Icons for categories
+    private final String COMBAT_ICON = "⚔️";
+    private final String MOVEMENT_ICON = "🏃";
+    private final String PLAYER_ICON = "👤";
+    private final String RENDER_ICON = "👁️";
+    private final String WORLD_ICON = "🌍";
+    private final String CLIENT_ICON = "💎";
 
     public CategoryWindow(final int x, final int y, final int width, final int height, final Category category, final ClickGUI parent) {
         this.moduleButtons = new ArrayList<>();
@@ -42,13 +45,10 @@ public final class CategoryWindow {
         this.x = x;
         this.y = y;
         this.width = width;
-        this.dragging = false;
         this.extended = true;
         this.height = height;
         this.category = category;
         this.parent = parent;
-        this.prevX = x;
-        this.prevY = y;
 
         final List<Module> modules = new ArrayList<>(Krypton.INSTANCE.getModuleManager().a(category));
         int offset = height;
@@ -61,46 +61,65 @@ public final class CategoryWindow {
 
     public void render(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
         int targetAlpha = skid.krypton.module.modules.client.Krypton.windowAlpha.getIntValue();
-        Color targetColor = new Color(18, 23, 18, targetAlpha);
+        Color targetColor = new Color(20, 28, 20, targetAlpha);
         
         if (this.currentColor == null) {
-            this.currentColor = new Color(18, 23, 18, 0);
+            this.currentColor = new Color(20, 28, 20, 0);
         } else {
             this.currentColor = ColorUtil.a(0.05f, targetColor, this.currentColor);
         }
         
-        float hoverTarget = this.isHovered(mouseX, mouseY) && !this.dragging ? 1.0F : 0.0F;
+        float hoverTarget = this.isHovered(mouseX, mouseY) ? 1.0F : 0.0F;
         this.hoverAnimation = (float) MathUtil.approachValue(delta * 0.1f, this.hoverAnimation, hoverTarget);
         
-        renderShadow(context, this.prevX, this.prevY, this.width, this.height);
+        renderShadow(context, this.x, this.y, this.width, this.height);
         
-        Color panelBg = ColorUtil.a(new Color(18, 23, 18, this.currentColor.getAlpha()), URANIUM_HOVER, this.hoverAnimation);
+        Color panelBg = ColorUtil.a(new Color(20, 28, 20, this.currentColor.getAlpha()), URANIUM_HOVER, this.hoverAnimation);
         float topRadius = this.extended ? 8.0F : 8.0F;
         float bottomRadius = this.extended ? 0.0F : 8.0F;
         
         RenderUtils.renderRoundedQuad(context.getMatrices(), panelBg, 
-            this.prevX, this.prevY, this.prevX + this.width, this.prevY + this.height, 
+            this.x, this.y, this.x + this.width, this.y + this.height, 
             topRadius, topRadius, bottomRadius, bottomRadius, 50.0);
         
-        context.fill(this.prevX, this.prevY, this.prevX + this.width, this.prevY + 28, URANIUM_HEADER.getRGB());
+        // Header with icon
+        context.fill(this.x, this.y, this.x + this.width, this.y + 32, URANIUM_HEADER.getRGB());
         
+        // Get icon for category
+        String icon = getCategoryIcon(this.category);
         String categoryName = this.category.name.toString().toUpperCase();
-        int textX = this.prevX + (this.width - TextRenderer.getWidth(categoryName)) / 2;
-        int textY = this.prevY + 9;
+        String fullText = icon + " " + categoryName;
+        int textX = this.x + (this.width - TextRenderer.getWidth(fullText)) / 2;
+        int textY = this.y + 10;
         
-        TextRenderer.drawString(categoryName, context, textX + 1, textY + 1, new Color(0, 0, 0, 100).getRGB());
-        TextRenderer.drawString(categoryName, context, textX, textY, URANIUM_ACCENT.getRGB());
+        // Shadow text effect
+        TextRenderer.drawString(fullText, context, textX + 1, textY + 1, new Color(0, 0, 0, 100).getRGB());
+        TextRenderer.drawString(fullText, context, textX, textY, URANIUM_ACCENT.getRGB());
         
-        context.fill(this.prevX, this.prevY + 27, this.prevX + this.width, this.prevY + 28, URANIUM_ACCENT.getRGB());
+        // Bottom accent line for header
+        context.fill(this.x, this.y + 31, this.x + this.width, this.y + 32, URANIUM_ACCENT.getRGB());
         
+        // Border
         RenderUtils.renderRoundedQuad(context.getMatrices(), URANIUM_BORDER,
-            this.prevX, this.prevY, this.prevX + this.width, this.prevY + this.height,
+            this.x, this.y, this.x + this.width, this.y + this.height,
             topRadius, topRadius, bottomRadius, bottomRadius, 30.0);
         
         this.updateButtons(delta);
         
         if (this.extended) {
             this.renderModuleButtons(context, mouseX, mouseY, delta);
+        }
+    }
+    
+    private String getCategoryIcon(Category category) {
+        switch (category.name.toString().toLowerCase()) {
+            case "combat": return COMBAT_ICON;
+            case "movement": return MOVEMENT_ICON;
+            case "player": return PLAYER_ICON;
+            case "render": return RENDER_ICON;
+            case "world": return WORLD_ICON;
+            case "client": return CLIENT_ICON;
+            default: return "◆";
         }
     }
     
@@ -129,22 +148,12 @@ public final class CategoryWindow {
         for (ModuleButton moduleButton : this.moduleButtons) {
             moduleButton.onGuiClose();
         }
-        this.dragging = false;
     }
 
     public void mouseClicked(final double mouseX, final double mouseY, final int button) {
         if (this.isHovered(mouseX, mouseY)) {
-            switch (button) {
-                case 0:
-                    if (!this.parent.isDraggingAlready()) {
-                        this.dragging = true;
-                        this.dragX = (int) (mouseX - this.x);
-                        this.dragY = (int) (mouseY - this.y);
-                    }
-                    break;
-                case 1:
-                    this.extended = !this.extended;
-                    break;
+            if (button == 1) {
+                this.extended = !this.extended;
             }
         }
         if (this.extended) {
@@ -180,35 +189,21 @@ public final class CategoryWindow {
     }
 
     public void mouseReleased(final double mouseX, final double mouseY, final int button) {
-        if (button == 0 && this.dragging) {
-            this.dragging = false;
-        }
         for (ModuleButton moduleButton : this.moduleButtons) {
             moduleButton.mouseReleased(mouseX, mouseY, button);
         }
     }
 
     public void mouseScrolled(final double mouseX, final double mouseY, final double horizontalAmount, final double verticalAmount) {
-        this.prevX = this.x;
-        this.prevY = this.y;
-        this.prevY += (int) (verticalAmount * 20.0);
-        this.setY((int) (this.y + verticalAmount * 20.0));
+        // No scrolling for fixed windows
     }
 
     public int getX() {
-        return this.prevX;
+        return this.x;
     }
 
     public int getY() {
-        return this.prevY;
-    }
-
-    public void setY(final int y) {
-        this.y = y;
-    }
-
-    public void setX(final int x) {
-        this.x = x;
+        return this.y;
     }
 
     public int getWidth() {
@@ -220,19 +215,6 @@ public final class CategoryWindow {
     }
 
     public boolean isHovered(final double mouseX, final double mouseY) {
-        return mouseX > this.x && mouseX < this.x + this.width && mouseY > this.y && mouseY < this.y + this.height;
-    }
-
-    public boolean isPrevHovered(final double mouseX, final double mouseY) {
-        return mouseX > this.prevX && mouseX < this.prevX + this.width && mouseY > this.prevY && mouseY < this.prevY + this.height;
-    }
-
-    public void updatePosition(final double mouseX, final double mouseY, final float delta) {
-        this.prevX = this.x;
-        this.prevY = this.y;
-        if (this.dragging) {
-            this.x = (int) (mouseX - this.dragX);
-            this.y = (int) (mouseY - this.dragY);
-        }
+        return mouseX > this.x && mouseX < this.x + this.width && mouseY > this.y && mouseY < this.y + 32;
     }
 }
