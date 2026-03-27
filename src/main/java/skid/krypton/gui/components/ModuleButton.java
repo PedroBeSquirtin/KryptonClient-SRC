@@ -80,10 +80,18 @@ public final class ModuleButton {
     public void render(final DrawContext drawContext, final int mouseX, final int mouseY, final float delta) {
         try {
             if (this.parent == null || this.module == null) return;
-            if (this.parent.getY() + this.offset > MinecraftClient.getInstance().getWindow().getHeight()) {
+            
+            final int x = this.parent.getX();
+            final int y = this.parent.getY() + this.offset;
+            final int width = this.parent.getWidth();
+            final int height = this.parent.getHeight();
+            
+            // Check if button is within screen bounds
+            if (y + height < 0 || y > MinecraftClient.getInstance().getWindow().getHeight()) {
                 return;
             }
             
+            // Update settings components
             if (this.settings != null) {
                 for (Component component : this.settings) {
                     if (component != null) {
@@ -94,11 +102,6 @@ public final class ModuleButton {
             
             this.updateAnimations(mouseX, mouseY, delta);
             
-            final int x = this.parent.getX();
-            final int y = this.parent.getY() + this.offset;
-            final int width = this.parent.getWidth();
-            final int height = this.parent.getHeight();
-            
             this.renderButtonBackground(drawContext, x, y, width, height);
             this.renderIndicator(drawContext, x, y, height);
             this.renderModuleInfo(drawContext, x, y, width, height);
@@ -107,7 +110,8 @@ public final class ModuleButton {
                 this.renderSettings(drawContext, mouseX, mouseY, delta);
             }
             
-            if (this.isHovered(mouseX, mouseY) && this.module != null) {
+            // Tooltip on hover
+            if (this.isHovered(mouseX, mouseY)) {
                 CharSequence description = this.module.getDescription();
                 if (description != null && description.length() > 0 && Krypton.INSTANCE.GUI != null) {
                     Krypton.INSTANCE.GUI.setTooltip(description, mouseX + 10, mouseY + 10);
@@ -131,9 +135,12 @@ public final class ModuleButton {
 
     private void renderButtonBackground(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
         final Color bgColor = ColorUtil.a(URANIUM_BG, URANIUM_HOVER, this.hoverAnimation);
-        final boolean isLast = this.parent != null && this.parent.moduleButtons != null && 
-                               this.parent.moduleButtons.size() > 0 && 
-                               this.parent.moduleButtons.get(this.parent.moduleButtons.size() - 1) == this;
+        
+        // Check if this is the last button
+        boolean isLast = false;
+        if (this.parent != null && this.parent.moduleButtons != null && this.parent.moduleButtons.size() > 0) {
+            isLast = this.parent.moduleButtons.get(this.parent.moduleButtons.size() - 1) == this;
+        }
         
         if (isLast && !this.extended) {
             RenderUtils.renderRoundedQuad(drawContext.getMatrices(), bgColor, 
@@ -145,6 +152,7 @@ public final class ModuleButton {
             drawContext.fill(x, y, x + width, y + height, bgColor.getRGB());
         }
         
+        // Separator line
         if (this.parent != null && this.parent.moduleButtons != null && this.parent.moduleButtons.indexOf(this) > 0) {
             drawContext.fill(x + 8, y, x + width - 8, y + 1, URANIUM_BORDER.getRGB());
         }
@@ -153,7 +161,7 @@ public final class ModuleButton {
     private void renderIndicator(final DrawContext drawContext, final int x, final int y, final int height) {
         Color color = (this.module != null && this.module.isEnabled()) ? URANIUM_ENABLED : URANIUM_ACCENT;
         
-        final float indicatorWidth = 5.0f * this.enabledAnimation;
+        final float indicatorWidth = 4.0f * this.enabledAnimation;
         if (indicatorWidth > 0.1f) {
             RenderUtils.renderRoundedQuad(drawContext.getMatrices(), 
                 ColorUtil.a(URANIUM_DISABLED, color, this.enabledAnimation), 
@@ -165,31 +173,32 @@ public final class ModuleButton {
     private void renderModuleInfo(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
         if (this.module == null) return;
         
+        // Module name
         Color nameColor = ColorUtil.a(URANIUM_DISABLED, URANIUM_ENABLED, this.enabledAnimation);
         String moduleName = this.module.getName() != null ? this.module.getName().toString() : "";
         TextRenderer.drawString(moduleName, drawContext, 
             x + 12, y + height / 2 - 5, nameColor.getRGB());
         
-        // Normal sized toggle button
-        final int toggleX = x + width - 48;
-        final int toggleY = y + height / 2 - 10;
-        final int toggleWidth = 36;
-        final int toggleHeight = 20;
+        // Modern toggle button
+        final int toggleX = x + width - 42;
+        final int toggleY = y + height / 2 - 9;
+        final int toggleWidth = 32;
+        final int toggleHeight = 18;
         
         // Background
         Color toggleBg = (this.module != null && this.module.isEnabled()) ? URANIUM_ENABLED : new Color(60, 80, 60, 200);
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), toggleBg,
-            toggleX, toggleY, toggleX + toggleWidth, toggleY + toggleHeight, 10, 10, 10, 10, 30);
+            toggleX, toggleY, toggleX + toggleWidth, toggleY + toggleHeight, 9, 9, 9, 9, 30);
         
         // Handle
-        int handleX = (this.module != null && this.module.isEnabled()) ? toggleX + toggleWidth - 14 : toggleX + 2;
+        int handleX = (this.module != null && this.module.isEnabled()) ? toggleX + toggleWidth - 12 : toggleX + 2;
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), Color.WHITE,
-            handleX, toggleY + 2, handleX + 12, toggleY + toggleHeight - 2, 8, 8, 8, 8, 30);
+            handleX, toggleY + 2, handleX + 10, toggleY + toggleHeight - 2, 7, 7, 7, 7, 30);
         
         // Glow effect for enabled modules
         if (this.module != null && this.module.isEnabled()) {
             RenderUtils.renderRoundedQuad(drawContext.getMatrices(), URANIUM_GLOW,
-                toggleX - 2, toggleY - 2, toggleX + toggleWidth + 2, toggleY + toggleHeight + 2, 12, 12, 12, 12, 30);
+                toggleX - 1, toggleY - 1, toggleX + toggleWidth + 1, toggleY + toggleHeight + 1, 10, 10, 10, 10, 30);
         }
     }
 
@@ -198,6 +207,8 @@ public final class ModuleButton {
         
         final int settingsY = this.parent.getY() + this.offset + this.parent.getHeight();
         final double animHeight = this.animation.getAnimation();
+        
+        if (animHeight <= 0) return;
         
         RenderSystem.enableScissor(
             this.parent.getX(), 
@@ -285,10 +296,10 @@ public final class ModuleButton {
         
         if (this.isHovered(mouseX, mouseY)) {
             if (button == 0) {
-                final int toggleX = this.parent.getX() + this.parent.getWidth() - 48;
-                final int toggleY = this.parent.getY() + this.offset + this.parent.getHeight() / 2 - 10;
-                final int toggleWidth = 36;
-                final int toggleHeight = 20;
+                final int toggleX = this.parent.getX() + this.parent.getWidth() - 42;
+                final int toggleY = this.parent.getY() + this.offset + this.parent.getHeight() / 2 - 9;
+                final int toggleWidth = 32;
+                final int toggleHeight = 18;
                 
                 if (mouseX >= toggleX && mouseX <= toggleX + toggleWidth && mouseY >= toggleY && mouseY <= toggleY + toggleHeight) {
                     this.module.toggle();
