@@ -130,8 +130,15 @@ public final class CategoryWindow {
     }
 
     public void keyPressed(final int keyCode, final int scanCode, final int modifiers) {
-        for (ModuleButton moduleButton : this.moduleButtons) {
-            moduleButton.keyPressed(keyCode, scanCode, modifiers);
+        // Ignore invalid or problematic key codes
+        if (keyCode <= 0) return;
+        
+        try {
+            for (ModuleButton moduleButton : this.moduleButtons) {
+                moduleButton.keyPressed(keyCode, scanCode, modifiers);
+            }
+        } catch (Exception e) {
+            // Silently catch any errors to prevent crashes
         }
     }
 
