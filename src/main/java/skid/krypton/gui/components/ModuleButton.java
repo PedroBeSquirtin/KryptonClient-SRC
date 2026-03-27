@@ -26,32 +26,31 @@ public final class ModuleButton {
     public Color currentColor;
     public Color currentAlpha;
     public Animation animation;
-    private final float CORNER_RADIUS = 6.0f;
-    private final Color ACCENT_COLOR;
-    private final Color HOVER_COLOR;
-    private final Color ENABLED_COLOR;
-    private final Color DISABLED_COLOR;
-    private final Color DESCRIPTION_BG;
+    
+    // Uranium Client Color Scheme
+    private final Color URANIUM_ACCENT = new Color(88, 166, 255, 255);
+    private final Color URANIUM_HOVER = new Color(88, 166, 255, 20);
+    private final Color URANIUM_ENABLED = new Color(88, 166, 255, 255);
+    private final Color URANIUM_DISABLED = new Color(180, 180, 200, 255);
+    private final Color URANIUM_BG = new Color(25, 25, 30, 230);
+    private final Color URANIUM_DESCRIPTION_BG = new Color(28, 28, 36, 245);
+    private final Color URANIUM_BORDER = new Color(60, 60, 70, 100);
+    
     private float hoverAnimation;
     private float enabledAnimation;
-    private final float expandAnimation;
+    private static final float CORNER_RADIUS = 6.0f;
 
     public ModuleButton(final CategoryWindow parent, final Module module, final int offset) {
         this.settings = new ArrayList<>();
         this.animation = new Animation(0.0);
-        this.ACCENT_COLOR = new Color(65, 105, 225);
-        this.HOVER_COLOR = new Color(255, 255, 255, 20);
-        this.ENABLED_COLOR = new Color(120, 190, 255);
-        this.DISABLED_COLOR = new Color(180, 180, 180);
-        this.DESCRIPTION_BG = new Color(40, 40, 40, 200);
         this.hoverAnimation = 0.0f;
         this.enabledAnimation = 0.0f;
-        this.expandAnimation = 0.0f;
         this.parent = parent;
         this.module = module;
         this.offset = offset;
         this.extended = false;
         this.settingOffset = parent.getHeight();
+        
         for (final Object next : module.getSettings()) {
             if (next instanceof BooleanSetting) {
                 this.settings.add(new Checkbox(this, (Setting) next, this.settingOffset));
@@ -72,153 +71,191 @@ public final class ModuleButton {
         }
     }
 
-    public void render(final DrawContext drawContext, final int n, final int n2, final float n3) {
+    public void render(final DrawContext drawContext, final int mouseX, final int mouseY, final float delta) {
         if (this.parent.getY() + this.offset > MinecraftClient.getInstance().getWindow().getHeight()) {
             return;
         }
-        final Iterator<Component> iterator = this.settings.iterator();
-        while (iterator.hasNext()) {
-            iterator.next().onUpdate();
+        
+        // Update settings components
+        for (Component component : this.settings) {
+            component.onUpdate();
         }
-        this.updateAnimations(n, n2, n3);
+        
+        this.updateAnimations(mouseX, mouseY, delta);
+        
         final int x = this.parent.getX();
-        final int n4 = this.parent.getY() + this.offset;
+        final int y = this.parent.getY() + this.offset;
         final int width = this.parent.getWidth();
         final int height = this.parent.getHeight();
-        this.renderButtonBackground(drawContext, x, n4, width, height);
-        this.renderIndicator(drawContext, x, n4, height);
-        this.renderModuleInfo(drawContext, x, n4, width, height);
+        
+        this.renderButtonBackground(drawContext, x, y, width, height);
+        this.renderIndicator(drawContext, x, y, height);
+        this.renderModuleInfo(drawContext, x, y, width, height);
+        
         if (this.extended) {
-            this.renderSettings(drawContext, n, n2, n3);
+            this.renderSettings(drawContext, mouseX, mouseY, delta);
         }
-        if (this.isHovered(n, n2) && !this.parent.dragging) {
-            Krypton.INSTANCE.GUI.setTooltip(this.module.getDescription(), n + 10, n2 + 10);
+        
+        // Tooltip on hover
+        if (this.isHovered(mouseX, mouseY) && !this.parent.dragging) {
+            CharSequence description = this.module.getDescription();
+            if (description != null && description.length() > 0) {
+                Krypton.INSTANCE.GUI.setTooltip(description, mouseX + 10, mouseY + 10);
+            }
         }
     }
 
-    private void updateAnimations(final int n, final int n2, final float n3) {
-        final float n4 = n3 * 0.05f;
-        float n5;
-        if (this.isHovered(n, n2) && !this.parent.dragging) {
-            n5 = 1.0f;
-        } else {
-            n5 = 0.0f;
-        }
-        this.hoverAnimation = (float) MathUtil.exponentialInterpolate(this.hoverAnimation, n5, 0.05000000074505806, n4);
-        float n6;
-        if (this.module.isEnabled()) {
-            n6 = 1.0f;
-        } else {
-            n6 = 0.0f;
-        }
-        this.enabledAnimation = (float) MathUtil.exponentialInterpolate(this.enabledAnimation, n6, 0.004999999888241291, n4);
+    private void updateAnimations(final int mouseX, final int mouseY, final float delta) {
+        final float deltaTime = delta * 0.05f;
+        
+        // Hover animation
+        float hoverTarget = (this.isHovered(mouseX, mouseY) && !this.parent.dragging) ? 1.0f : 0.0f;
+        this.hoverAnimation = (float) MathUtil.exponentialInterpolate(this.hoverAnimation, hoverTarget, 0.05f, deltaTime);
+        
+        // Enabled animation
+        float enabledTarget = this.module.isEnabled() ? 1.0f : 0.0f;
+        this.enabledAnimation = (float) MathUtil.exponentialInterpolate(this.enabledAnimation, enabledTarget, 0.005f, deltaTime);
         this.enabledAnimation = (float) MathUtil.clampValue(this.enabledAnimation, 0.0, 1.0);
     }
 
-    private void renderButtonBackground(final DrawContext drawContext, final int n, final int n2, final int n3, final int n4) {
-        final Color a = ColorUtil.a(new Color(25, 25, 30, 230), this.HOVER_COLOR, this.hoverAnimation);
-        final boolean b = this.parent.moduleButtons.get(this.parent.moduleButtons.size() - 1) == this;
-        if (b && !this.extended) {
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), a, n, n2, n + n3, n2 + n4, 0.0, 0.0, 6.0, 6.0, 50.0);
-        } else if (b && this.extended) {
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), a, n, n2, n + n3, n2 + n4, 0.0, 0.0, 0.0, 0.0, 50.0);
+    private void renderButtonBackground(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
+        final Color bgColor = ColorUtil.a(URANIUM_BG, URANIUM_HOVER, this.hoverAnimation);
+        final boolean isLast = this.parent.moduleButtons.get(this.parent.moduleButtons.size() - 1) == this;
+        
+        if (isLast && !this.extended) {
+            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), bgColor, 
+                x, y, x + width, y + height, 0.0, 0.0, CORNER_RADIUS, CORNER_RADIUS, 50.0);
+        } else if (isLast && this.extended) {
+            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), bgColor, 
+                x, y, x + width, y + height, 0.0, 0.0, 0.0, 0.0, 50.0);
         } else {
-            drawContext.fill(n, n2, n + n3, n2 + n4, a.getRGB());
+            drawContext.fill(x, y, x + width, y + height, bgColor.getRGB());
         }
+        
+        // Separator line
         if (this.parent.moduleButtons.indexOf(this) > 0) {
-            drawContext.fill(n + 4, n2, n + n3 - 4, n2 + 1, new Color(60, 60, 65, 100).getRGB());
+            drawContext.fill(x + 8, y, x + width - 8, y + 1, URANIUM_BORDER.getRGB());
         }
     }
 
-    private void renderIndicator(final DrawContext drawContext, final int n, final int n2, final int n3) {
+    private void renderIndicator(final DrawContext drawContext, final int x, final int y, final int height) {
         Color color;
         if (this.module.isEnabled()) {
-            color = Utils.getMainColor(255, Krypton.INSTANCE.getModuleManager().a(this.module.getCategory()).indexOf(this.module));
+            color = URANIUM_ENABLED;
         } else {
-            color = this.ACCENT_COLOR;
+            color = URANIUM_ACCENT;
         }
-        final float n4 = 5.0f * this.enabledAnimation;
-        if (n4 > 0.1f) {
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), ColorUtil.a(this.DISABLED_COLOR, color, this.enabledAnimation), n, n2 + 2, n + n4, n2 + n3 - 2, 1.5, 1.5, 1.5, 1.5, 60.0);
+        
+        final float indicatorWidth = 5.0f * this.enabledAnimation;
+        if (indicatorWidth > 0.1f) {
+            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), 
+                ColorUtil.a(URANIUM_DISABLED, color, this.enabledAnimation), 
+                x, y + 2, x + indicatorWidth, y + height - 2, 
+                1.5f, 1.5f, 1.5f, 1.5f, 60.0);
         }
     }
 
-    private void renderModuleInfo(final DrawContext drawContext, final int n, final int n2, final int n3, final int n4) {
-        TextRenderer.drawString(this.module.getName(), drawContext, n + 10, n2 + n4 / 2 - 6, ColorUtil.a(this.DISABLED_COLOR, this.ENABLED_COLOR, this.enabledAnimation).getRGB());
-        final int n5 = n + n3 - 40;
-        final int n6 = n2 + n4 / 2 - 6;
-        RenderUtils.renderRoundedQuad(drawContext.getMatrices(), ColorUtil.a(new Color(60, 60, 65, 200), new Color(65, 105, 225, 100), this.enabledAnimation), n5, n6, n5 + 24.0f, n6 + 12.0f, 6.0, 6.0, 6.0, 6.0, 50.0);
-        final float n7 = n5 + 6.0f + 12.0f * this.enabledAnimation;
-        RenderUtils.renderCircle(drawContext.getMatrices(), ColorUtil.a(new Color(180, 180, 180), this.ENABLED_COLOR, this.enabledAnimation), n7, n6 + 6.0f, 5.0, 12);
+    private void renderModuleInfo(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
+        // Module name with Uranium styling
+        Color nameColor = ColorUtil.a(URANIUM_DISABLED, URANIUM_ENABLED, this.enabledAnimation);
+        TextRenderer.drawString(this.module.getName(), drawContext, 
+            x + 12, y + height / 2 - 6, nameColor.getRGB());
+        
+        // Modern toggle button
+        final int toggleX = x + width - 32;
+        final int toggleY = y + height / 2 - 8;
+        
+        // Background
+        Color toggleBg = this.module.isEnabled() ? URANIUM_ENABLED : new Color(60, 60, 70, 200);
+        RenderUtils.renderRoundedQuad(drawContext.getMatrices(), toggleBg,
+            toggleX, toggleY, toggleX + 20, toggleY + 16, 8, 8, 8, 8, 30);
+        
+        // Handle
+        int handleX = this.module.isEnabled() ? toggleX + 9 : toggleX + 3;
+        RenderUtils.renderRoundedQuad(drawContext.getMatrices(), Color.WHITE,
+            handleX, toggleY + 2, handleX + 8, toggleY + 14, 6, 6, 6, 6, 30);
+        
+        // Glow effect for enabled modules
         if (this.module.isEnabled()) {
-            RenderUtils.renderCircle(drawContext.getMatrices(), new Color(this.ENABLED_COLOR.getRed(), this.ENABLED_COLOR.getGreen(), this.ENABLED_COLOR.getBlue(), 30), n7, n6 + 6.0f, 8.0, 16);
+            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), new Color(88, 166, 255, 60),
+                toggleX - 2, toggleY - 2, toggleX + 22, toggleY + 18, 10, 10, 10, 10, 30);
         }
     }
 
-    private void renderSettings(final DrawContext drawContext, final int n, final int n2, final float n3) {
-        final int n4 = this.parent.getY() + this.offset + this.parent.getHeight();
-        final double animation = this.animation.getAnimation();
-        RenderSystem.enableScissor(this.parent.getX(), Krypton.mc.getWindow().getHeight() - (n4 + (int) animation), this.parent.getWidth(), (int) animation);
-        final Iterator<Component> iterator = this.settings.iterator();
-        while (iterator.hasNext()) {
-            iterator.next().render(drawContext, n, n2 - n4, n3);
+    private void renderSettings(final DrawContext drawContext, final int mouseX, final int mouseY, final float delta) {
+        final int settingsY = this.parent.getY() + this.offset + this.parent.getHeight();
+        final double animHeight = this.animation.getAnimation();
+        
+        RenderSystem.enableScissor(
+            this.parent.getX(), 
+            Krypton.mc.getWindow().getHeight() - (settingsY + (int) animHeight), 
+            this.parent.getWidth(), 
+            (int) animHeight
+        );
+        
+        for (Component component : this.settings) {
+            component.render(drawContext, mouseX, mouseY - settingsY, delta);
         }
+        
         this.renderSliderControls(drawContext);
         RenderSystem.disableScissor();
     }
 
     private void renderSliderControls(final DrawContext drawContext) {
-        for (final Component next : this.settings) {
-            if (next instanceof final NumberBox numberBox) {
-                this.renderModernSliderKnob(drawContext, next.parentX() + Math.max(numberBox.lerpedOffsetX, 2.5), next.parentY() + numberBox.offset + next.parentOffset() + 27.5, numberBox.currentColor1);
-            } else {
-                if (!(next instanceof Slider)) {
-                    continue;
-                }
-                this.renderModernSliderKnob(drawContext, next.parentX() + Math.max(((Slider) next).lerpedOffsetMinX, 2.5), next.parentY() + next.offset + next.parentOffset() + 27.5, ((Slider) next).accentColor1);
-                this.renderModernSliderKnob(drawContext, next.parentX() + Math.max(((Slider) next).lerpedOffsetMaxX, 2.5), next.parentY() + next.offset + next.parentOffset() + 27.5, ((Slider) next).accentColor1);
+        for (final Component component : this.settings) {
+            if (component instanceof NumberBox numberBox) {
+                this.renderModernSliderKnob(drawContext, 
+                    component.parentX() + Math.max(numberBox.lerpedOffsetX, 2.5), 
+                    component.parentY() + numberBox.offset + component.parentOffset() + 27.5, 
+                    numberBox.currentColor1);
+            } else if (component instanceof Slider slider) {
+                this.renderModernSliderKnob(drawContext, 
+                    component.parentX() + Math.max(slider.lerpedOffsetMinX, 2.5), 
+                    component.parentY() + component.offset + component.parentOffset() + 27.5, 
+                    slider.accentColor1);
+                this.renderModernSliderKnob(drawContext, 
+                    component.parentX() + Math.max(slider.lerpedOffsetMaxX, 2.5), 
+                    component.parentY() + component.offset + component.parentOffset() + 27.5, 
+                    slider.accentColor1);
             }
         }
     }
 
-    private void renderModernSliderKnob(final DrawContext drawContext, final double n, final double n2, final Color color) {
-        RenderUtils.renderCircle(drawContext.getMatrices(), new Color(0, 0, 0, 100), n, n2, 7.0, 18);
-        RenderUtils.renderCircle(drawContext.getMatrices(), color, n, n2, 5.5, 16);
-        RenderUtils.renderCircle(drawContext.getMatrices(), new Color(255, 255, 255, 70), n, n2 - 1.0, 3.0, 12);
+    private void renderModernSliderKnob(final DrawContext drawContext, final double x, final double y, final Color color) {
+        RenderUtils.renderCircle(drawContext.getMatrices(), new Color(0, 0, 0, 100), x, y, 7.0, 18);
+        RenderUtils.renderCircle(drawContext.getMatrices(), color, x, y, 5.5, 16);
+        RenderUtils.renderCircle(drawContext.getMatrices(), new Color(255, 255, 255, 70), x, y - 1.0, 3.0, 12);
     }
 
     public void onExtend() {
-        final Iterator<ModuleButton> iterator = this.parent.moduleButtons.iterator();
-        while (iterator.hasNext()) {
-            iterator.next().extended = false;
+        for (ModuleButton button : this.parent.moduleButtons) {
+            button.extended = false;
         }
     }
 
-    public void keyPressed(final int n, final int n2, final int n3) {
-        final Iterator<Component> iterator = this.settings.iterator();
-        while (iterator.hasNext()) {
-            iterator.next().keyPressed(n, n2, n3);
+    public void keyPressed(final int keyCode, final int scanCode, final int modifiers) {
+        for (Component component : this.settings) {
+            component.keyPressed(keyCode, scanCode, modifiers);
         }
     }
 
-    public void mouseDragged(final double n, final double n2, final int n3, final double n4, final double n5) {
+    public void mouseDragged(final double mouseX, final double mouseY, final int button, final double deltaX, final double deltaY) {
         if (this.extended) {
-            final Iterator<Component> iterator = this.settings.iterator();
-            while (iterator.hasNext()) {
-                iterator.next().mouseDragged(n, n2, n3, n4, n5);
+            for (Component component : this.settings) {
+                component.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
             }
         }
     }
 
-    public void mouseClicked(final double n, final double n2, final int button) {
-        if (this.isHovered(n, n2)) {
+    public void mouseClicked(final double mouseX, final double mouseY, final int button) {
+        if (this.isHovered(mouseX, mouseY)) {
             if (button == 0) {
-                final int n4 = this.parent.getX() + this.parent.getWidth() - 30;
-                final int n5 = this.parent.getY() + this.offset + this.parent.getHeight() / 2 - 3;
-
-                if (n >= n4 && n <= n4 + 12 && n2 >= n5 && n2 <= n5 + 6) {
+                final int toggleX = this.parent.getX() + this.parent.getWidth() - 32;
+                final int toggleY = this.parent.getY() + this.offset + this.parent.getHeight() / 2 - 8;
+                
+                if (mouseX >= toggleX && mouseX <= toggleX + 20 && mouseY >= toggleY && mouseY <= toggleY + 16) {
                     this.module.toggle();
-                } else if (!this.module.getSettings().isEmpty() && n > this.parent.getX() + this.parent.getWidth() - 25) {
+                } else if (!this.module.getSettings().isEmpty() && mouseX > this.parent.getX() + this.parent.getWidth() - 25) {
                     if (!this.extended) {
                         this.onExtend();
                     }
@@ -227,18 +264,15 @@ public final class ModuleButton {
                     this.module.toggle();
                 }
             } else if (button == 1) {
-                if (this.module.getSettings().isEmpty()) {
-                    return;
-                }
-                if (!this.extended) {
-                    this.onExtend();
-                }
+                if (this.module.getSettings().isEmpty()) return;
+                if (!this.extended) this.onExtend();
                 this.extended = !this.extended;
             }
         }
+        
         if (this.extended) {
             for (Component setting : this.settings) {
-                setting.mouseClicked(n, n2, button);
+                setting.mouseClicked(mouseX, mouseY, button);
             }
         }
     }
@@ -247,29 +281,23 @@ public final class ModuleButton {
         this.currentAlpha = null;
         this.currentColor = null;
         this.hoverAnimation = 0.0f;
-        float enabledAnimation;
-        if (this.module.isEnabled()) {
-            enabledAnimation = 1.0f;
-        } else {
-            enabledAnimation = 0.0f;
-        }
-        this.enabledAnimation = enabledAnimation;
-        final Iterator<Component> iterator = this.settings.iterator();
-        while (iterator.hasNext()) {
-            iterator.next().onGuiClose();
+        this.enabledAnimation = this.module.isEnabled() ? 1.0f : 0.0f;
+        
+        for (Component component : this.settings) {
+            component.onGuiClose();
         }
     }
 
-    public void mouseReleased(final double n, final double n2, final int n3) {
-        final Iterator<Component> iterator = this.settings.iterator();
-        while (iterator.hasNext()) {
-            iterator.next().mouseReleased(n, n2, n3);
+    public void mouseReleased(final double mouseX, final double mouseY, final int button) {
+        for (Component component : this.settings) {
+            component.mouseReleased(mouseX, mouseY, button);
         }
     }
 
-    public boolean isHovered(final double n, final double n2) {
-        //if (module.getName().equals("Self Destruct"))
-        //    System.out.println(module.getName() + ": " + (n > parent.getX()) + " && " + (n < parent.getX() + parent.getWidth()) + " && " + (n2 > parent.getY() + offset) + " && " + (n2 < parent.getY() + offset + parent.getHeight()));
-        return n > this.parent.getX() && n < this.parent.getX() + this.parent.getWidth() && n2 > this.parent.getY() + this.offset && n2 < this.parent.getY() + this.offset + this.parent.getHeight();
+    public boolean isHovered(final double mouseX, final double mouseY) {
+        return mouseX > this.parent.getX() && 
+               mouseX < this.parent.getX() + this.parent.getWidth() && 
+               mouseY > this.parent.getY() + this.offset && 
+               mouseY < this.parent.getY() + this.offset + this.parent.getHeight();
     }
 }
