@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import skid.krypton.Krypton;
+import skid.krypton.font.Fonts;
 import skid.krypton.gui.CategoryWindow;
 import skid.krypton.gui.Component;
 import skid.krypton.module.Module;
@@ -27,14 +28,16 @@ public final class ModuleButton {
     public Color currentAlpha;
     public Animation animation;
     
-    // Uranium Client Color Scheme
-    private final Color URANIUM_ACCENT = new Color(88, 166, 255, 255);
-    private final Color URANIUM_HOVER = new Color(88, 166, 255, 20);
-    private final Color URANIUM_ENABLED = new Color(88, 166, 255, 255);
-    private final Color URANIUM_DISABLED = new Color(180, 180, 200, 255);
-    private final Color URANIUM_BG = new Color(25, 25, 30, 230);
-    private final Color URANIUM_DESCRIPTION_BG = new Color(28, 28, 36, 245);
-    private final Color URANIUM_BORDER = new Color(60, 60, 70, 100);
+    // Uranium Green Color Scheme
+    private final Color URANIUM_ACCENT = new Color(80, 200, 80, 255);
+    private final Color URANIUM_ACCENT_DARK = new Color(50, 150, 50, 255);
+    private final Color URANIUM_HOVER = new Color(80, 200, 80, 20);
+    private final Color URANIUM_ENABLED = new Color(80, 200, 80, 255);
+    private final Color URANIUM_DISABLED = new Color(150, 180, 150, 255);
+    private final Color URANIUM_BG = new Color(22, 28, 22, 230);
+    private final Color URANIUM_DESCRIPTION_BG = new Color(20, 25, 20, 245);
+    private final Color URANIUM_BORDER = new Color(50, 70, 50, 100);
+    private final Color URANIUM_GLOW = new Color(80, 200, 80, 60);
     
     private float hoverAnimation;
     private float enabledAnimation;
@@ -139,12 +142,7 @@ public final class ModuleButton {
     }
 
     private void renderIndicator(final DrawContext drawContext, final int x, final int y, final int height) {
-        Color color;
-        if (this.module.isEnabled()) {
-            color = URANIUM_ENABLED;
-        } else {
-            color = URANIUM_ACCENT;
-        }
+        Color color = this.module.isEnabled() ? URANIUM_ENABLED : URANIUM_ACCENT;
         
         final float indicatorWidth = 5.0f * this.enabledAnimation;
         if (indicatorWidth > 0.1f) {
@@ -156,9 +154,9 @@ public final class ModuleButton {
     }
 
     private void renderModuleInfo(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
-        // Module name with Uranium styling
+        // Module name with Uranium styling using new font
         Color nameColor = ColorUtil.a(URANIUM_DISABLED, URANIUM_ENABLED, this.enabledAnimation);
-        TextRenderer.drawString(this.module.getName(), drawContext, 
+        Fonts.FONT.drawString(drawContext.getMatrices(), this.module.getName(), 
             x + 12, y + height / 2 - 6, nameColor.getRGB());
         
         // Modern toggle button
@@ -166,7 +164,7 @@ public final class ModuleButton {
         final int toggleY = y + height / 2 - 8;
         
         // Background
-        Color toggleBg = this.module.isEnabled() ? URANIUM_ENABLED : new Color(60, 60, 70, 200);
+        Color toggleBg = this.module.isEnabled() ? URANIUM_ENABLED : new Color(50, 70, 50, 200);
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), toggleBg,
             toggleX, toggleY, toggleX + 20, toggleY + 16, 8, 8, 8, 8, 30);
         
@@ -177,7 +175,7 @@ public final class ModuleButton {
         
         // Glow effect for enabled modules
         if (this.module.isEnabled()) {
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), new Color(88, 166, 255, 60),
+            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), URANIUM_GLOW,
                 toggleX - 2, toggleY - 2, toggleX + 22, toggleY + 18, 10, 10, 10, 10, 30);
         }
     }
