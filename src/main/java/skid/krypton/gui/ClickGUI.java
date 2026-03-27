@@ -25,7 +25,7 @@ public final class ClickGUI extends Screen {
     
     // Uranium Green Color Scheme
     private final Color DESCRIPTION_BG = new Color(20, 25, 20, 245);
-    private final Color ACCENT = new Color(80, 200, 80, 255); // Fresh Uranium Green
+    private final Color ACCENT = new Color(80, 200, 80, 255);
     private final Color ACCENT_DARK = new Color(50, 150, 50, 255);
     private final Color ACCENT_GLOW = new Color(80, 200, 80, 60);
     private final Color ACCENT_HOVER = new Color(100, 220, 100, 255);
@@ -43,7 +43,6 @@ public final class ClickGUI extends Screen {
         this.windows = new ArrayList<>();
         this.tooltipText = null;
         
-        // Create windows for each category with modern spacing
         int x = WINDOW_START_X;
         for (Category category : Category.values()) {
             this.windows.add(new CategoryWindow(x, WINDOW_START_Y, WINDOW_WIDTH, WINDOW_HEIGHT, category, this));
@@ -94,21 +93,17 @@ public final class ClickGUI extends Screen {
             
             RenderUtils.unscaledProjection();
             
-            // Scale mouse coordinates
             int scaledMouseX = (int)(mouseX * MinecraftClient.getInstance().getWindow().getScaleFactor());
             int scaledMouseY = (int)(mouseY * MinecraftClient.getInstance().getWindow().getScaleFactor());
             super.render(drawContext, scaledMouseX, scaledMouseY, delta);
             
-            // Render Uranium header
             renderUraniumHeader(drawContext);
             
-            // Render all category windows
             for (CategoryWindow window : this.windows) {
                 window.render(drawContext, scaledMouseX, scaledMouseY, delta);
                 window.updatePosition(scaledMouseX, scaledMouseY, delta);
             }
             
-            // Render tooltip if exists
             if (this.tooltipText != null) {
                 renderModernTooltip(drawContext, this.tooltipText, this.tooltipX, this.tooltipY);
                 this.tooltipText = null;
@@ -122,7 +117,6 @@ public final class ClickGUI extends Screen {
         int screenWidth = Krypton.mc.getWindow().getWidth();
         int headerY = 12;
         
-        // Glow effect behind logo
         String logo = "URANIUM";
         int logoWidth = Fonts.FONT.getStringWidth(logo);
         int logoX = screenWidth / 2 - logoWidth / 2;
@@ -130,7 +124,6 @@ public final class ClickGUI extends Screen {
         RenderUtils.renderRoundedQuad(context.getMatrices(), ACCENT_GLOW,
             logoX - 25, headerY - 8, logoX + logoWidth + 25, headerY + 32, 25, 25, 25, 25, 50);
         
-        // Logo with gradient effect using new font
         for (int i = 0; i < logo.length(); i++) {
             float progress = (float) i / logo.length();
             Color gradientColor = lerpColor(ACCENT, ACCENT_DARK, progress);
@@ -138,13 +131,11 @@ public final class ClickGUI extends Screen {
                 logoX + (i * 14), headerY + 8, gradientColor.getRGB());
         }
         
-        // Version text
         String version = "URANIUM EDITION";
         int versionWidth = Fonts.FONT.getStringWidth(version);
         Fonts.FONT.drawString(context.getMatrices(), version,
             screenWidth / 2 - versionWidth / 2, headerY + 32, new Color(140, 180, 140, 255).getRGB());
         
-        // Accent line under header
         context.fill(logoX - 25, headerY + 48, logoX + logoWidth + 25, headerY + 49, ACCENT.getRGB());
     }
     
@@ -154,7 +145,6 @@ public final class ClickGUI extends Screen {
         int textWidth = Fonts.FONT.getStringWidth(text);
         int screenWidth = Krypton.mc.getWindow().getWidth();
         
-        // Adjust position if tooltip would go off screen
         if (x + textWidth + 20 > screenWidth) {
             x = screenWidth - textWidth - 20;
         }
@@ -164,7 +154,6 @@ public final class ClickGUI extends Screen {
         int tooltipWidth = textWidth + 20;
         int tooltipHeight = 26;
         
-        // Shadow
         for (int i = 1; i <= 3; i++) {
             int alpha = 30 - i * 8;
             RenderUtils.renderRoundedQuad(context.getMatrices(), new Color(0, 0, 0, alpha),
@@ -172,17 +161,14 @@ public final class ClickGUI extends Screen {
                 6, 6, 6, 6, 30);
         }
         
-        // Background
         RenderUtils.renderRoundedQuad(context.getMatrices(), DESCRIPTION_BG,
             tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight,
             8, 8, 8, 8, 50);
         
-        // Border
         RenderUtils.renderRoundedQuad(context.getMatrices(), new Color(80, 200, 80, 60),
             tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight,
             8, 8, 8, 8, 30);
         
-        // Text
         Fonts.FONT.drawString(context.getMatrices(), text, x, y + 4, new Color(220, 240, 220, 255).getRGB());
     }
     
@@ -198,6 +184,13 @@ public final class ClickGUI extends Screen {
     }
 
     public boolean keyPressed(final int keyCode, final int scanCode, final int modifiers) {
+        // Handle escape key to close GUI
+        if (keyCode == 256) { // ESC key
+            this.close();
+            return true;
+        }
+        
+        // Pass key events to windows
         for (CategoryWindow window : this.windows) {
             window.keyPressed(keyCode, scanCode, modifiers);
         }
