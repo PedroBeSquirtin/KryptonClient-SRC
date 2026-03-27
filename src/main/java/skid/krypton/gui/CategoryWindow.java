@@ -32,15 +32,14 @@ public final class CategoryWindow {
     private final Color ACCENT_GREEN = new Color(80, 220, 80, 255);
     private final Color HOVER_GREEN = new Color(80, 220, 80, 25);
     private final Color BORDER_COLOR = new Color(70, 100, 70, 120);
-    private final Color TEXT_BRIGHT = new Color(255, 255, 255, 255);
     
-    // Icons for categories
-    private final String COMBAT_ICON = "⚔️";
-    private final String MOVEMENT_ICON = "🏃";
-    private final String PLAYER_ICON = "👤";
-    private final String RENDER_ICON = "👁️";
-    private final String WORLD_ICON = "🌍";
-    private final String CLIENT_ICON = "⚙️";
+    // Simple text icons that will definitely show
+    private final String COMBAT_ICON = "[C]";
+    private final String MOVEMENT_ICON = "[M]";
+    private final String PLAYER_ICON = "[P]";
+    private final String RENDER_ICON = "[R]";
+    private final String WORLD_ICON = "[W]";
+    private final String CLIENT_ICON = "[S]";
 
     public CategoryWindow(final int x, final int y, final int width, final int height, final Category category, final ClickGUI parent) {
         this.moduleButtons = new ArrayList<>();
@@ -97,15 +96,16 @@ public final class CategoryWindow {
             // Header
             context.fill(this.x, this.y, this.x + this.width, this.y + 32, HEADER_COLOR.getRGB());
             
-            // Category text with icon - perfectly centered
+            // Get icon for category
             String icon = getCategoryIcon(this.category);
             String categoryName = this.category.name.toString();
             String fullText = icon + " " + categoryName;
             
+            // Calculate text position - perfectly centered
             int textX = this.x + (this.width - getTextWidth(fullText)) / 2;
-            int textY = this.y + 10;
+            int textY = this.y + 11;
             
-            // Draw text with bright color
+            // Draw text with bright green color
             drawText(context, fullText, textX, textY, ACCENT_GREEN.getRGB());
             
             // Bottom accent line
@@ -143,7 +143,7 @@ public final class CategoryWindow {
     }
     
     private String getCategoryIcon(Category category) {
-        if (category == null || category.name == null) return "◆";
+        if (category == null || category.name == null) return "[?]";
         String name = category.name.toString().toLowerCase();
         switch (name) {
             case "combat": return COMBAT_ICON;
@@ -152,7 +152,7 @@ public final class CategoryWindow {
             case "render": return RENDER_ICON;
             case "world": return WORLD_ICON;
             case "client": return CLIENT_ICON;
-            default: return "◆";
+            default: return "[?]";
         }
     }
     
