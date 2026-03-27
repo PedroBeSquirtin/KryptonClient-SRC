@@ -2,7 +2,6 @@ package skid.krypton.gui;
 
 import net.minecraft.client.gui.DrawContext;
 import skid.krypton.Krypton;
-import skid.krypton.font.Fonts;
 import skid.krypton.gui.components.ModuleButton;
 import skid.krypton.module.Category;
 import skid.krypton.module.Module;
@@ -34,10 +33,8 @@ public final class CategoryWindow {
     private final Color URANIUM_BG = new Color(18, 23, 18, 245);
     private final Color URANIUM_HEADER = new Color(23, 30, 23, 255);
     private final Color URANIUM_ACCENT = new Color(80, 200, 80, 255);
-    private final Color URANIUM_ACCENT_DARK = new Color(50, 150, 50, 255);
     private final Color URANIUM_HOVER = new Color(80, 200, 80, 20);
     private final Color URANIUM_BORDER = new Color(50, 70, 50, 100);
-    private final Color URANIUM_SHADOW = new Color(0, 0, 0, 60);
 
     public CategoryWindow(final int x, final int y, final int width, final int height, final Category category, final ClickGUI parent) {
         this.moduleButtons = new ArrayList<>();
@@ -63,7 +60,6 @@ public final class CategoryWindow {
     }
 
     public void render(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
-        // Update background color with animation
         int targetAlpha = skid.krypton.module.modules.client.Krypton.windowAlpha.getIntValue();
         Color targetColor = new Color(18, 23, 18, targetAlpha);
         
@@ -73,14 +69,11 @@ public final class CategoryWindow {
             this.currentColor = ColorUtil.a(0.05f, targetColor, this.currentColor);
         }
         
-        // Hover animation
         float hoverTarget = this.isHovered(mouseX, mouseY) && !this.dragging ? 1.0F : 0.0F;
         this.hoverAnimation = (float) MathUtil.approachValue(delta * 0.1f, this.hoverAnimation, hoverTarget);
         
-        // Render shadow
         renderShadow(context, this.prevX, this.prevY, this.width, this.height);
         
-        // Main panel background
         Color panelBg = ColorUtil.a(new Color(18, 23, 18, this.currentColor.getAlpha()), URANIUM_HOVER, this.hoverAnimation);
         float topRadius = this.extended ? 8.0F : 8.0F;
         float bottomRadius = this.extended ? 0.0F : 8.0F;
@@ -89,22 +82,17 @@ public final class CategoryWindow {
             this.prevX, this.prevY, this.prevX + this.width, this.prevY + this.height, 
             topRadius, topRadius, bottomRadius, bottomRadius, 50.0);
         
-        // Header
         context.fill(this.prevX, this.prevY, this.prevX + this.width, this.prevY + 28, URANIUM_HEADER.getRGB());
         
-        // Category name with Uranium styling using new font
         String categoryName = this.category.name.toString().toUpperCase();
-        int textX = this.prevX + (this.width - Fonts.FONT.getStringWidth(categoryName)) / 2;
+        int textX = this.prevX + (this.width - TextRenderer.getWidth(categoryName)) / 2;
         int textY = this.prevY + 9;
         
-        // Shadow text effect
-        Fonts.FONT.drawString(context.getMatrices(), categoryName, textX + 1, textY + 1, new Color(0, 0, 0, 100).getRGB());
-        Fonts.FONT.drawString(context.getMatrices(), categoryName, textX, textY, URANIUM_ACCENT.getRGB());
+        TextRenderer.drawString(categoryName, context, textX + 1, textY + 1, new Color(0, 0, 0, 100).getRGB());
+        TextRenderer.drawString(categoryName, context, textX, textY, URANIUM_ACCENT.getRGB());
         
-        // Bottom accent line for header
         context.fill(this.prevX, this.prevY + 27, this.prevX + this.width, this.prevY + 28, URANIUM_ACCENT.getRGB());
         
-        // Border
         RenderUtils.renderRoundedQuad(context.getMatrices(), URANIUM_BORDER,
             this.prevX, this.prevY, this.prevX + this.width, this.prevY + this.height,
             topRadius, topRadius, bottomRadius, bottomRadius, 30.0);
@@ -130,15 +118,9 @@ public final class CategoryWindow {
     }
 
     public void keyPressed(final int keyCode, final int scanCode, final int modifiers) {
-        // Ignore invalid or problematic key codes
         if (keyCode <= 0) return;
-        
-        try {
-            for (ModuleButton moduleButton : this.moduleButtons) {
-                moduleButton.keyPressed(keyCode, scanCode, modifiers);
-            }
-        } catch (Exception e) {
-            // Silently catch any errors to prevent crashes
+        for (ModuleButton moduleButton : this.moduleButtons) {
+            moduleButton.keyPressed(keyCode, scanCode, modifiers);
         }
     }
 
@@ -249,7 +231,6 @@ public final class CategoryWindow {
         this.prevX = this.x;
         this.prevY = this.y;
         if (this.dragging) {
-            // Direct 1:1 dragging - no lag, instant response
             this.x = (int) (mouseX - this.dragX);
             this.y = (int) (mouseY - this.dragY);
         }
