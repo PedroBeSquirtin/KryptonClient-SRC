@@ -24,13 +24,11 @@ public final class ClickGUI extends Screen {
     // Brighter Uranium Green Color Scheme
     private final Color DESCRIPTION_BG = new Color(20, 28, 20, 245);
     private final Color ACCENT = new Color(100, 255, 100, 255);
-    private final Color ACCENT_BRIGHT = new Color(120, 255, 120, 255);
     private final Color ACCENT_GLOW = new Color(100, 255, 100, 80);
-    private final Color ACCENT_DARK = new Color(70, 200, 70, 255);
     
     // Window positioning - fixed positions (no dragging)
     private static final int WINDOW_START_X = 50;
-    private static final int WINDOW_START_Y = 80;
+    private static final int WINDOW_START_Y = 40;
     private static final int WINDOW_WIDTH = 240;
     private static final int WINDOW_HEIGHT = 30;
     private static final int WINDOW_SPACING = 20;
@@ -94,8 +92,6 @@ public final class ClickGUI extends Screen {
                 int scaledMouseY = (int)(mouseY * MinecraftClient.getInstance().getWindow().getScaleFactor());
                 super.render(drawContext, scaledMouseX, scaledMouseY, delta);
                 
-                renderUraniumHeader(drawContext);
-                
                 for (CategoryWindow window : this.windows) {
                     try {
                         window.render(drawContext, scaledMouseX, scaledMouseY, delta);
@@ -111,34 +107,6 @@ public final class ClickGUI extends Screen {
                 
                 RenderUtils.scaledProjection();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    
-    private void renderUraniumHeader(DrawContext context) {
-        try {
-            int screenWidth = Krypton.mc.getWindow().getWidth();
-            int headerY = 20;
-            
-            String logo = "URANIUM";
-            int logoWidth = TextRenderer.getWidth(logo);
-            int logoX = screenWidth / 2 - logoWidth / 2;
-            
-            // Glow effect
-            RenderUtils.renderRoundedQuad(context.getMatrices(), ACCENT_GLOW,
-                logoX - 25, headerY - 5, logoX + logoWidth + 25, headerY + 35, 20, 20, 20, 20, 50);
-            
-            // Logo with gradient
-            for (int i = 0; i < logo.length(); i++) {
-                float progress = (float) i / logo.length();
-                Color gradientColor = lerpColor(ACCENT, ACCENT_DARK, progress);
-                TextRenderer.drawString(String.valueOf(logo.charAt(i)), context,
-                    logoX + (i * 14), headerY + 12, toMCColor(gradientColor));
-            }
-            
-            // Accent line
-            context.fill(logoX - 25, headerY + 42, logoX + logoWidth + 25, headerY + 43, ACCENT.getRGB());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -175,21 +143,10 @@ public final class ClickGUI extends Screen {
                 tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight,
                 8, 8, 8, 8, 30);
             
-            TextRenderer.drawString(text, context, x, y + 4, toMCColor(new Color(220, 255, 220, 255)));
+            TextRenderer.drawString(text, context, x, y + 4, new Color(220, 255, 220, 255).getRGB());
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-    
-    private Color lerpColor(Color c1, Color c2, float t) {
-        int r = (int)(c1.getRed() + (c2.getRed() - c1.getRed()) * t);
-        int g = (int)(c1.getGreen() + (c2.getGreen() - c1.getGreen()) * t);
-        int b = (int)(c1.getBlue() + (c2.getBlue() - c1.getBlue()) * t);
-        return new Color(r, g, b);
-    }
-    
-    private int toMCColor(Color c) {
-        return net.minecraft.util.math.ColorHelper.Argb.getArgb(c.getAlpha(), c.getRed(), c.getGreen(), c.getBlue());
     }
 
     public boolean keyPressed(final int keyCode, final int scanCode, final int modifiers) {
