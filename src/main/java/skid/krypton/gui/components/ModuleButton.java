@@ -26,14 +26,14 @@ public final class ModuleButton {
     public Color currentAlpha;
     public Animation animation;
     
-    // Uranium Green Color Scheme
-    private final Color URANIUM_ACCENT = new Color(80, 200, 80, 255);
-    private final Color URANIUM_HOVER = new Color(80, 200, 80, 20);
-    private final Color URANIUM_ENABLED = new Color(80, 200, 80, 255);
-    private final Color URANIUM_DISABLED = new Color(150, 180, 150, 255);
-    private final Color URANIUM_BG = new Color(22, 28, 22, 230);
-    private final Color URANIUM_BORDER = new Color(50, 70, 50, 100);
-    private final Color URANIUM_GLOW = new Color(80, 200, 80, 60);
+    // Brighter Uranium Green Color Scheme
+    private final Color URANIUM_ACCENT = new Color(100, 255, 100, 255);
+    private final Color URANIUM_HOVER = new Color(100, 255, 100, 25);
+    private final Color URANIUM_ENABLED = new Color(100, 255, 100, 255);
+    private final Color URANIUM_DISABLED = new Color(170, 200, 170, 255);
+    private final Color URANIUM_BG = new Color(25, 35, 25, 235);
+    private final Color URANIUM_BORDER = new Color(70, 100, 70, 150);
+    private final Color URANIUM_GLOW = new Color(100, 255, 100, 80);
     
     private float hoverAnimation;
     private float enabledAnimation;
@@ -94,7 +94,7 @@ public final class ModuleButton {
             this.renderSettings(drawContext, mouseX, mouseY, delta);
         }
         
-        if (this.isHovered(mouseX, mouseY) && !this.parent.dragging) {
+        if (this.isHovered(mouseX, mouseY)) {
             CharSequence description = this.module.getDescription();
             if (description != null && description.length() > 0) {
                 Krypton.INSTANCE.GUI.setTooltip(description, mouseX + 10, mouseY + 10);
@@ -105,7 +105,7 @@ public final class ModuleButton {
     private void updateAnimations(final int mouseX, final int mouseY, final float delta) {
         final float deltaTime = delta * 0.05f;
         
-        float hoverTarget = (this.isHovered(mouseX, mouseY) && !this.parent.dragging) ? 1.0f : 0.0f;
+        float hoverTarget = this.isHovered(mouseX, mouseY) ? 1.0f : 0.0f;
         this.hoverAnimation = (float) MathUtil.exponentialInterpolate(this.hoverAnimation, hoverTarget, 0.05f, deltaTime);
         
         float enabledTarget = this.module.isEnabled() ? 1.0f : 0.0f;
@@ -147,22 +147,28 @@ public final class ModuleButton {
     private void renderModuleInfo(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
         Color nameColor = ColorUtil.a(URANIUM_DISABLED, URANIUM_ENABLED, this.enabledAnimation);
         TextRenderer.drawString(this.module.getName(), drawContext, 
-            x + 12, y + height / 2 - 6, nameColor.getRGB());
+            x + 12, y + height / 2 - 5, nameColor.getRGB());
         
-        final int toggleX = x + width - 32;
-        final int toggleY = y + height / 2 - 8;
+        // Normal sized toggle button
+        final int toggleX = x + width - 48;
+        final int toggleY = y + height / 2 - 10;
+        final int toggleWidth = 36;
+        final int toggleHeight = 20;
         
-        Color toggleBg = this.module.isEnabled() ? URANIUM_ENABLED : new Color(50, 70, 50, 200);
+        // Background
+        Color toggleBg = this.module.isEnabled() ? URANIUM_ENABLED : new Color(60, 80, 60, 200);
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), toggleBg,
-            toggleX, toggleY, toggleX + 20, toggleY + 16, 8, 8, 8, 8, 30);
+            toggleX, toggleY, toggleX + toggleWidth, toggleY + toggleHeight, 10, 10, 10, 10, 30);
         
-        int handleX = this.module.isEnabled() ? toggleX + 9 : toggleX + 3;
+        // Handle
+        int handleX = this.module.isEnabled() ? toggleX + toggleWidth - 14 : toggleX + 2;
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), Color.WHITE,
-            handleX, toggleY + 2, handleX + 8, toggleY + 14, 6, 6, 6, 6, 30);
+            handleX, toggleY + 2, handleX + 12, toggleY + toggleHeight - 2, 8, 8, 8, 8, 30);
         
+        // Glow effect for enabled modules
         if (this.module.isEnabled()) {
             RenderUtils.renderRoundedQuad(drawContext.getMatrices(), URANIUM_GLOW,
-                toggleX - 2, toggleY - 2, toggleX + 22, toggleY + 18, 10, 10, 10, 10, 30);
+                toggleX - 2, toggleY - 2, toggleX + toggleWidth + 2, toggleY + toggleHeight + 2, 12, 12, 12, 12, 30);
         }
     }
 
@@ -235,10 +241,12 @@ public final class ModuleButton {
     public void mouseClicked(final double mouseX, final double mouseY, final int button) {
         if (this.isHovered(mouseX, mouseY)) {
             if (button == 0) {
-                final int toggleX = this.parent.getX() + this.parent.getWidth() - 32;
-                final int toggleY = this.parent.getY() + this.offset + this.parent.getHeight() / 2 - 8;
+                final int toggleX = this.parent.getX() + this.parent.getWidth() - 48;
+                final int toggleY = this.parent.getY() + this.offset + this.parent.getHeight() / 2 - 10;
+                final int toggleWidth = 36;
+                final int toggleHeight = 20;
                 
-                if (mouseX >= toggleX && mouseX <= toggleX + 20 && mouseY >= toggleY && mouseY <= toggleY + 16) {
+                if (mouseX >= toggleX && mouseX <= toggleX + toggleWidth && mouseY >= toggleY && mouseY <= toggleY + toggleHeight) {
                     this.module.toggle();
                 } else if (!this.module.getSettings().isEmpty() && mouseX > this.parent.getX() + this.parent.getWidth() - 25) {
                     if (!this.extended) {
