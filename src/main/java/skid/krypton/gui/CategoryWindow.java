@@ -1,5 +1,6 @@
 package skid.krypton.gui;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import skid.krypton.Krypton;
 import skid.krypton.gui.components.ModuleButton;
@@ -100,12 +101,17 @@ public final class CategoryWindow {
             String fullText = icon + " " + categoryName;
             
             // Calculate text position
-            int textX = this.x + (this.width - TextRenderer.getWidth(fullText)) / 2;
+            int textX = this.x + (this.width - getTextWidth(fullText)) / 2;
             int textY = this.y + 13;
             
-            // Draw shadow text effect
-            TextRenderer.drawString(fullText, context, textX + 1, textY + 1, new Color(0, 0, 0, 100).getRGB());
-            TextRenderer.drawString(fullText, context, textX, textY, URANIUM_ACCENT.getRGB());
+            // Draw text using both methods to ensure visibility
+            // Method 1: Try TextRenderer
+            try {
+                TextRenderer.drawString(fullText, context, textX, textY, URANIUM_ACCENT.getRGB());
+            } catch (Exception e) {
+                // Method 2: Fallback to Minecraft's default font
+                context.drawText(MinecraftClient.getInstance().textRenderer, fullText, textX, textY, URANIUM_ACCENT.getRGB(), false);
+            }
             
             // Bottom accent line for header
             context.fill(this.x, this.y + 35, this.x + this.width, this.y + 36, URANIUM_ACCENT.getRGB());
@@ -122,6 +128,14 @@ public final class CategoryWindow {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+    
+    private int getTextWidth(String text) {
+        try {
+            return TextRenderer.getWidth(text);
+        } catch (Exception e) {
+            return MinecraftClient.getInstance().textRenderer.getWidth(text);
         }
     }
     
