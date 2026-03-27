@@ -48,57 +48,73 @@ public final class ModuleButton {
         this.module = module;
         this.offset = offset;
         this.extended = false;
-        this.settingOffset = parent.getHeight();
+        this.settingOffset = parent != null ? parent.getHeight() : 30;
         
-        for (final Object next : module.getSettings()) {
-            if (next instanceof BooleanSetting) {
-                this.settings.add(new Checkbox(this, (Setting) next, this.settingOffset));
-            } else if (next instanceof NumberSetting) {
-                this.settings.add(new NumberBox(this, (Setting) next, this.settingOffset));
-            } else if (next instanceof ModeSetting) {
-                this.settings.add(new ModeBox(this, (Setting) next, this.settingOffset));
-            } else if (next instanceof BindSetting) {
-                this.settings.add(new Keybind(this, (Setting) next, this.settingOffset));
-            } else if (next instanceof StringSetting) {
-                this.settings.add(new TextBox(this, (Setting) next, this.settingOffset));
-            } else if (next instanceof MinMaxSetting) {
-                this.settings.add(new Slider(this, (Setting) next, this.settingOffset));
-            } else if (next instanceof ItemSetting) {
-                this.settings.add(new ItemBox(this, (Setting) next, this.settingOffset));
+        if (module != null && module.getSettings() != null) {
+            for (final Object next : module.getSettings()) {
+                if (next == null) continue;
+                try {
+                    if (next instanceof BooleanSetting) {
+                        this.settings.add(new Checkbox(this, (Setting) next, this.settingOffset));
+                    } else if (next instanceof NumberSetting) {
+                        this.settings.add(new NumberBox(this, (Setting) next, this.settingOffset));
+                    } else if (next instanceof ModeSetting) {
+                        this.settings.add(new ModeBox(this, (Setting) next, this.settingOffset));
+                    } else if (next instanceof BindSetting) {
+                        this.settings.add(new Keybind(this, (Setting) next, this.settingOffset));
+                    } else if (next instanceof StringSetting) {
+                        this.settings.add(new TextBox(this, (Setting) next, this.settingOffset));
+                    } else if (next instanceof MinMaxSetting) {
+                        this.settings.add(new Slider(this, (Setting) next, this.settingOffset));
+                    } else if (next instanceof ItemSetting) {
+                        this.settings.add(new ItemBox(this, (Setting) next, this.settingOffset));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                this.settingOffset += parent != null ? parent.getHeight() : 30;
             }
-            this.settingOffset += parent.getHeight();
         }
     }
 
     public void render(final DrawContext drawContext, final int mouseX, final int mouseY, final float delta) {
-        if (this.parent.getY() + this.offset > MinecraftClient.getInstance().getWindow().getHeight()) {
-            return;
-        }
-        
-        for (Component component : this.settings) {
-            component.onUpdate();
-        }
-        
-        this.updateAnimations(mouseX, mouseY, delta);
-        
-        final int x = this.parent.getX();
-        final int y = this.parent.getY() + this.offset;
-        final int width = this.parent.getWidth();
-        final int height = this.parent.getHeight();
-        
-        this.renderButtonBackground(drawContext, x, y, width, height);
-        this.renderIndicator(drawContext, x, y, height);
-        this.renderModuleInfo(drawContext, x, y, width, height);
-        
-        if (this.extended) {
-            this.renderSettings(drawContext, mouseX, mouseY, delta);
-        }
-        
-        if (this.isHovered(mouseX, mouseY)) {
-            CharSequence description = this.module.getDescription();
-            if (description != null && description.length() > 0) {
-                Krypton.INSTANCE.GUI.setTooltip(description, mouseX + 10, mouseY + 10);
+        try {
+            if (this.parent == null || this.module == null) return;
+            if (this.parent.getY() + this.offset > MinecraftClient.getInstance().getWindow().getHeight()) {
+                return;
             }
+            
+            if (this.settings != null) {
+                for (Component component : this.settings) {
+                    if (component != null) {
+                        component.onUpdate();
+                    }
+                }
+            }
+            
+            this.updateAnimations(mouseX, mouseY, delta);
+            
+            final int x = this.parent.getX();
+            final int y = this.parent.getY() + this.offset;
+            final int width = this.parent.getWidth();
+            final int height = this.parent.getHeight();
+            
+            this.renderButtonBackground(drawContext, x, y, width, height);
+            this.renderIndicator(drawContext, x, y, height);
+            this.renderModuleInfo(drawContext, x, y, width, height);
+            
+            if (this.extended && this.settings != null) {
+                this.renderSettings(drawContext, mouseX, mouseY, delta);
+            }
+            
+            if (this.isHovered(mouseX, mouseY) && this.module != null) {
+                CharSequence description = this.module.getDescription();
+                if (description != null && description.length() > 0 && Krypton.INSTANCE.GUI != null) {
+                    Krypton.INSTANCE.GUI.setTooltip(description, mouseX + 10, mouseY + 10);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -108,14 +124,16 @@ public final class ModuleButton {
         float hoverTarget = this.isHovered(mouseX, mouseY) ? 1.0f : 0.0f;
         this.hoverAnimation = (float) MathUtil.exponentialInterpolate(this.hoverAnimation, hoverTarget, 0.05f, deltaTime);
         
-        float enabledTarget = this.module.isEnabled() ? 1.0f : 0.0f;
+        float enabledTarget = (this.module != null && this.module.isEnabled()) ? 1.0f : 0.0f;
         this.enabledAnimation = (float) MathUtil.exponentialInterpolate(this.enabledAnimation, enabledTarget, 0.005f, deltaTime);
         this.enabledAnimation = (float) MathUtil.clampValue(this.enabledAnimation, 0.0, 1.0);
     }
 
     private void renderButtonBackground(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
         final Color bgColor = ColorUtil.a(URANIUM_BG, URANIUM_HOVER, this.hoverAnimation);
-        final boolean isLast = this.parent.moduleButtons.get(this.parent.moduleButtons.size() - 1) == this;
+        final boolean isLast = this.parent != null && this.parent.moduleButtons != null && 
+                               this.parent.moduleButtons.size() > 0 && 
+                               this.parent.moduleButtons.get(this.parent.moduleButtons.size() - 1) == this;
         
         if (isLast && !this.extended) {
             RenderUtils.renderRoundedQuad(drawContext.getMatrices(), bgColor, 
@@ -127,13 +145,13 @@ public final class ModuleButton {
             drawContext.fill(x, y, x + width, y + height, bgColor.getRGB());
         }
         
-        if (this.parent.moduleButtons.indexOf(this) > 0) {
+        if (this.parent != null && this.parent.moduleButtons != null && this.parent.moduleButtons.indexOf(this) > 0) {
             drawContext.fill(x + 8, y, x + width - 8, y + 1, URANIUM_BORDER.getRGB());
         }
     }
 
     private void renderIndicator(final DrawContext drawContext, final int x, final int y, final int height) {
-        Color color = this.module.isEnabled() ? URANIUM_ENABLED : URANIUM_ACCENT;
+        Color color = (this.module != null && this.module.isEnabled()) ? URANIUM_ENABLED : URANIUM_ACCENT;
         
         final float indicatorWidth = 5.0f * this.enabledAnimation;
         if (indicatorWidth > 0.1f) {
@@ -145,8 +163,11 @@ public final class ModuleButton {
     }
 
     private void renderModuleInfo(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
+        if (this.module == null) return;
+        
         Color nameColor = ColorUtil.a(URANIUM_DISABLED, URANIUM_ENABLED, this.enabledAnimation);
-        TextRenderer.drawString(this.module.getName(), drawContext, 
+        String moduleName = this.module.getName() != null ? this.module.getName().toString() : "";
+        TextRenderer.drawString(moduleName, drawContext, 
             x + 12, y + height / 2 - 5, nameColor.getRGB());
         
         // Normal sized toggle button
@@ -156,23 +177,25 @@ public final class ModuleButton {
         final int toggleHeight = 20;
         
         // Background
-        Color toggleBg = this.module.isEnabled() ? URANIUM_ENABLED : new Color(60, 80, 60, 200);
+        Color toggleBg = (this.module != null && this.module.isEnabled()) ? URANIUM_ENABLED : new Color(60, 80, 60, 200);
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), toggleBg,
             toggleX, toggleY, toggleX + toggleWidth, toggleY + toggleHeight, 10, 10, 10, 10, 30);
         
         // Handle
-        int handleX = this.module.isEnabled() ? toggleX + toggleWidth - 14 : toggleX + 2;
+        int handleX = (this.module != null && this.module.isEnabled()) ? toggleX + toggleWidth - 14 : toggleX + 2;
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), Color.WHITE,
             handleX, toggleY + 2, handleX + 12, toggleY + toggleHeight - 2, 8, 8, 8, 8, 30);
         
         // Glow effect for enabled modules
-        if (this.module.isEnabled()) {
+        if (this.module != null && this.module.isEnabled()) {
             RenderUtils.renderRoundedQuad(drawContext.getMatrices(), URANIUM_GLOW,
                 toggleX - 2, toggleY - 2, toggleX + toggleWidth + 2, toggleY + toggleHeight + 2, 12, 12, 12, 12, 30);
         }
     }
 
     private void renderSettings(final DrawContext drawContext, final int mouseX, final int mouseY, final float delta) {
+        if (this.parent == null) return;
+        
         final int settingsY = this.parent.getY() + this.offset + this.parent.getHeight();
         final double animHeight = this.animation.getAnimation();
         
@@ -183,8 +206,12 @@ public final class ModuleButton {
             (int) animHeight
         );
         
-        for (Component component : this.settings) {
-            component.render(drawContext, mouseX, mouseY - settingsY, delta);
+        if (this.settings != null) {
+            for (Component component : this.settings) {
+                if (component != null) {
+                    component.render(drawContext, mouseX, mouseY - settingsY, delta);
+                }
+            }
         }
         
         this.renderSliderControls(drawContext);
@@ -192,21 +219,27 @@ public final class ModuleButton {
     }
 
     private void renderSliderControls(final DrawContext drawContext) {
+        if (this.settings == null) return;
         for (final Component component : this.settings) {
-            if (component instanceof NumberBox numberBox) {
-                this.renderModernSliderKnob(drawContext, 
-                    component.parentX() + Math.max(numberBox.lerpedOffsetX, 2.5), 
-                    component.parentY() + numberBox.offset + component.parentOffset() + 27.5, 
-                    numberBox.currentColor1);
-            } else if (component instanceof Slider slider) {
-                this.renderModernSliderKnob(drawContext, 
-                    component.parentX() + Math.max(slider.lerpedOffsetMinX, 2.5), 
-                    component.parentY() + component.offset + component.parentOffset() + 27.5, 
-                    slider.accentColor1);
-                this.renderModernSliderKnob(drawContext, 
-                    component.parentX() + Math.max(slider.lerpedOffsetMaxX, 2.5), 
-                    component.parentY() + component.offset + component.parentOffset() + 27.5, 
-                    slider.accentColor1);
+            if (component == null) continue;
+            try {
+                if (component instanceof NumberBox numberBox) {
+                    this.renderModernSliderKnob(drawContext, 
+                        component.parentX() + Math.max(numberBox.lerpedOffsetX, 2.5), 
+                        component.parentY() + numberBox.offset + component.parentOffset() + 27.5, 
+                        numberBox.currentColor1);
+                } else if (component instanceof Slider slider) {
+                    this.renderModernSliderKnob(drawContext, 
+                        component.parentX() + Math.max(slider.lerpedOffsetMinX, 2.5), 
+                        component.parentY() + component.offset + component.parentOffset() + 27.5, 
+                        slider.accentColor1);
+                    this.renderModernSliderKnob(drawContext, 
+                        component.parentX() + Math.max(slider.lerpedOffsetMaxX, 2.5), 
+                        component.parentY() + component.offset + component.parentOffset() + 27.5, 
+                        slider.accentColor1);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
@@ -218,27 +251,38 @@ public final class ModuleButton {
     }
 
     public void onExtend() {
+        if (this.parent == null || this.parent.moduleButtons == null) return;
         for (ModuleButton button : this.parent.moduleButtons) {
-            button.extended = false;
+            if (button != null) {
+                button.extended = false;
+            }
         }
     }
 
     public void keyPressed(final int keyCode, final int scanCode, final int modifiers) {
         if (keyCode <= 0) return;
-        for (Component component : this.settings) {
-            component.keyPressed(keyCode, scanCode, modifiers);
+        if (this.settings != null) {
+            for (Component component : this.settings) {
+                if (component != null) {
+                    component.keyPressed(keyCode, scanCode, modifiers);
+                }
+            }
         }
     }
 
     public void mouseDragged(final double mouseX, final double mouseY, final int button, final double deltaX, final double deltaY) {
-        if (this.extended) {
+        if (this.extended && this.settings != null) {
             for (Component component : this.settings) {
-                component.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+                if (component != null) {
+                    component.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+                }
             }
         }
     }
 
     public void mouseClicked(final double mouseX, final double mouseY, final int button) {
+        if (this.parent == null || this.module == null) return;
+        
         if (this.isHovered(mouseX, mouseY)) {
             if (button == 0) {
                 final int toggleX = this.parent.getX() + this.parent.getWidth() - 48;
@@ -248,7 +292,7 @@ public final class ModuleButton {
                 
                 if (mouseX >= toggleX && mouseX <= toggleX + toggleWidth && mouseY >= toggleY && mouseY <= toggleY + toggleHeight) {
                     this.module.toggle();
-                } else if (!this.module.getSettings().isEmpty() && mouseX > this.parent.getX() + this.parent.getWidth() - 25) {
+                } else if (this.module.getSettings() != null && !this.module.getSettings().isEmpty() && mouseX > this.parent.getX() + this.parent.getWidth() - 25) {
                     if (!this.extended) {
                         this.onExtend();
                     }
@@ -257,15 +301,17 @@ public final class ModuleButton {
                     this.module.toggle();
                 }
             } else if (button == 1) {
-                if (this.module.getSettings().isEmpty()) return;
+                if (this.module.getSettings() == null || this.module.getSettings().isEmpty()) return;
                 if (!this.extended) this.onExtend();
                 this.extended = !this.extended;
             }
         }
         
-        if (this.extended) {
+        if (this.extended && this.settings != null) {
             for (Component setting : this.settings) {
-                setting.mouseClicked(mouseX, mouseY, button);
+                if (setting != null) {
+                    setting.mouseClicked(mouseX, mouseY, button);
+                }
             }
         }
     }
@@ -274,20 +320,29 @@ public final class ModuleButton {
         this.currentAlpha = null;
         this.currentColor = null;
         this.hoverAnimation = 0.0f;
-        this.enabledAnimation = this.module.isEnabled() ? 1.0f : 0.0f;
+        this.enabledAnimation = (this.module != null && this.module.isEnabled()) ? 1.0f : 0.0f;
         
-        for (Component component : this.settings) {
-            component.onGuiClose();
+        if (this.settings != null) {
+            for (Component component : this.settings) {
+                if (component != null) {
+                    component.onGuiClose();
+                }
+            }
         }
     }
 
     public void mouseReleased(final double mouseX, final double mouseY, final int button) {
-        for (Component component : this.settings) {
-            component.mouseReleased(mouseX, mouseY, button);
+        if (this.settings != null) {
+            for (Component component : this.settings) {
+                if (component != null) {
+                    component.mouseReleased(mouseX, mouseY, button);
+                }
+            }
         }
     }
 
     public boolean isHovered(final double mouseX, final double mouseY) {
+        if (this.parent == null) return false;
         return mouseX > this.parent.getX() && 
                mouseX < this.parent.getX() + this.parent.getWidth() && 
                mouseY > this.parent.getY() + this.offset && 
