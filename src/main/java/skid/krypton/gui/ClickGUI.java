@@ -5,7 +5,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import skid.krypton.Krypton;
-import skid.krypton.font.Fonts;
 import skid.krypton.module.Category;
 import skid.krypton.utils.ColorUtil;
 import skid.krypton.utils.RenderUtils;
@@ -13,7 +12,6 @@ import skid.krypton.utils.TextRenderer;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public final class ClickGUI extends Screen {
@@ -28,7 +26,6 @@ public final class ClickGUI extends Screen {
     private final Color ACCENT = new Color(80, 200, 80, 255);
     private final Color ACCENT_DARK = new Color(50, 150, 50, 255);
     private final Color ACCENT_GLOW = new Color(80, 200, 80, 60);
-    private final Color ACCENT_HOVER = new Color(100, 220, 100, 255);
     private final Color HEADER_BG = new Color(15, 20, 15, 250);
     
     // Window positioning
@@ -118,7 +115,7 @@ public final class ClickGUI extends Screen {
         int headerY = 12;
         
         String logo = "URANIUM";
-        int logoWidth = Fonts.FONT.getStringWidth(logo);
+        int logoWidth = TextRenderer.getWidth(logo);
         int logoX = screenWidth / 2 - logoWidth / 2;
         
         RenderUtils.renderRoundedQuad(context.getMatrices(), ACCENT_GLOW,
@@ -127,14 +124,14 @@ public final class ClickGUI extends Screen {
         for (int i = 0; i < logo.length(); i++) {
             float progress = (float) i / logo.length();
             Color gradientColor = lerpColor(ACCENT, ACCENT_DARK, progress);
-            Fonts.FONT.drawString(context.getMatrices(), String.valueOf(logo.charAt(i)), 
-                logoX + (i * 14), headerY + 8, gradientColor.getRGB());
+            TextRenderer.drawString(String.valueOf(logo.charAt(i)), context,
+                logoX + (i * 14), headerY + 8, toMCColor(gradientColor));
         }
         
         String version = "URANIUM EDITION";
-        int versionWidth = Fonts.FONT.getStringWidth(version);
-        Fonts.FONT.drawString(context.getMatrices(), version,
-            screenWidth / 2 - versionWidth / 2, headerY + 32, new Color(140, 180, 140, 255).getRGB());
+        int versionWidth = TextRenderer.getWidth(version);
+        TextRenderer.drawString(version, context,
+            screenWidth / 2 - versionWidth / 2, headerY + 32, toMCColor(new Color(140, 180, 140, 255)));
         
         context.fill(logoX - 25, headerY + 48, logoX + logoWidth + 25, headerY + 49, ACCENT.getRGB());
     }
@@ -142,7 +139,7 @@ public final class ClickGUI extends Screen {
     private void renderModernTooltip(DrawContext context, CharSequence text, int x, int y) {
         if (text == null || text.length() == 0) return;
         
-        int textWidth = Fonts.FONT.getStringWidth(text);
+        int textWidth = TextRenderer.getWidth(text);
         int screenWidth = Krypton.mc.getWindow().getWidth();
         
         if (x + textWidth + 20 > screenWidth) {
@@ -169,7 +166,7 @@ public final class ClickGUI extends Screen {
             tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight,
             8, 8, 8, 8, 30);
         
-        Fonts.FONT.drawString(context.getMatrices(), text, x, y + 4, new Color(220, 240, 220, 255).getRGB());
+        TextRenderer.drawString(text, context, x, y + 4, toMCColor(new Color(220, 240, 220, 255)));
     }
     
     private Color lerpColor(Color c1, Color c2, float t) {
@@ -184,13 +181,11 @@ public final class ClickGUI extends Screen {
     }
 
     public boolean keyPressed(final int keyCode, final int scanCode, final int modifiers) {
-        // Handle escape key to close GUI
-        if (keyCode == 256) { // ESC key
+        if (keyCode == 256) {
             this.close();
             return true;
         }
         
-        // Pass key events to windows
         for (CategoryWindow window : this.windows) {
             window.keyPressed(keyCode, scanCode, modifiers);
         }
