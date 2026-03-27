@@ -20,7 +20,7 @@ public final class CategoryWindow {
     private final int height;
     public Color currentColor;
     private final Category category;
-    public boolean dragging = false; // Added back but always false
+    public boolean dragging = false;
     public boolean extended;
     public ClickGUI parent;
     private float hoverAnimation;
@@ -51,69 +51,81 @@ public final class CategoryWindow {
         this.category = category;
         this.parent = parent;
 
-        final List<Module> modules = new ArrayList<>(Krypton.INSTANCE.getModuleManager().a(category));
-        int offset = height;
+        try {
+            final List<Module> modules = new ArrayList<>(Krypton.INSTANCE.getModuleManager().a(category));
+            int offset = height;
 
-        for (Module module : modules) {
-            this.moduleButtons.add(new ModuleButton(this, module, offset));
-            offset += height;
+            for (Module module : modules) {
+                if (module != null) {
+                    this.moduleButtons.add(new ModuleButton(this, module, offset));
+                    offset += height;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     public void render(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
-        int targetAlpha = skid.krypton.module.modules.client.Krypton.windowAlpha.getIntValue();
-        Color targetColor = new Color(20, 28, 20, targetAlpha);
-        
-        if (this.currentColor == null) {
-            this.currentColor = new Color(20, 28, 20, 0);
-        } else {
-            this.currentColor = ColorUtil.a(0.05f, targetColor, this.currentColor);
-        }
-        
-        float hoverTarget = this.isHovered(mouseX, mouseY) ? 1.0F : 0.0F;
-        this.hoverAnimation = (float) MathUtil.approachValue(delta * 0.1f, this.hoverAnimation, hoverTarget);
-        
-        renderShadow(context, this.x, this.y, this.width, this.height);
-        
-        Color panelBg = ColorUtil.a(new Color(20, 28, 20, this.currentColor.getAlpha()), URANIUM_HOVER, this.hoverAnimation);
-        float topRadius = this.extended ? 8.0F : 8.0F;
-        float bottomRadius = this.extended ? 0.0F : 8.0F;
-        
-        RenderUtils.renderRoundedQuad(context.getMatrices(), panelBg, 
-            this.x, this.y, this.x + this.width, this.y + this.height, 
-            topRadius, topRadius, bottomRadius, bottomRadius, 50.0);
-        
-        // Header with icon
-        context.fill(this.x, this.y, this.x + this.width, this.y + 32, URANIUM_HEADER.getRGB());
-        
-        // Get icon for category
-        String icon = getCategoryIcon(this.category);
-        String categoryName = this.category.name.toString().toUpperCase();
-        String fullText = icon + " " + categoryName;
-        int textX = this.x + (this.width - TextRenderer.getWidth(fullText)) / 2;
-        int textY = this.y + 10;
-        
-        // Shadow text effect
-        TextRenderer.drawString(fullText, context, textX + 1, textY + 1, new Color(0, 0, 0, 100).getRGB());
-        TextRenderer.drawString(fullText, context, textX, textY, URANIUM_ACCENT.getRGB());
-        
-        // Bottom accent line for header
-        context.fill(this.x, this.y + 31, this.x + this.width, this.y + 32, URANIUM_ACCENT.getRGB());
-        
-        // Border
-        RenderUtils.renderRoundedQuad(context.getMatrices(), URANIUM_BORDER,
-            this.x, this.y, this.x + this.width, this.y + this.height,
-            topRadius, topRadius, bottomRadius, bottomRadius, 30.0);
-        
-        this.updateButtons(delta);
-        
-        if (this.extended) {
-            this.renderModuleButtons(context, mouseX, mouseY, delta);
+        try {
+            int targetAlpha = skid.krypton.module.modules.client.Krypton.windowAlpha.getIntValue();
+            Color targetColor = new Color(20, 28, 20, targetAlpha);
+            
+            if (this.currentColor == null) {
+                this.currentColor = new Color(20, 28, 20, 0);
+            } else {
+                this.currentColor = ColorUtil.a(0.05f, targetColor, this.currentColor);
+            }
+            
+            float hoverTarget = this.isHovered(mouseX, mouseY) ? 1.0F : 0.0F;
+            this.hoverAnimation = (float) MathUtil.approachValue(delta * 0.1f, this.hoverAnimation, hoverTarget);
+            
+            renderShadow(context, this.x, this.y, this.width, this.height);
+            
+            Color panelBg = ColorUtil.a(new Color(20, 28, 20, this.currentColor.getAlpha()), URANIUM_HOVER, this.hoverAnimation);
+            float topRadius = this.extended ? 8.0F : 8.0F;
+            float bottomRadius = this.extended ? 0.0F : 8.0F;
+            
+            RenderUtils.renderRoundedQuad(context.getMatrices(), panelBg, 
+                this.x, this.y, this.x + this.width, this.y + this.height, 
+                topRadius, topRadius, bottomRadius, bottomRadius, 50.0);
+            
+            // Header with icon
+            context.fill(this.x, this.y, this.x + this.width, this.y + 32, URANIUM_HEADER.getRGB());
+            
+            // Get icon for category
+            String icon = getCategoryIcon(this.category);
+            String categoryName = this.category.name != null ? this.category.name.toString().toUpperCase() : "";
+            String fullText = icon + " " + categoryName;
+            int textX = this.x + (this.width - TextRenderer.getWidth(fullText)) / 2;
+            int textY = this.y + 10;
+            
+            // Shadow text effect
+            TextRenderer.drawString(fullText, context, textX + 1, textY + 1, new Color(0, 0, 0, 100).getRGB());
+            TextRenderer.drawString(fullText, context, textX, textY, URANIUM_ACCENT.getRGB());
+            
+            // Bottom accent line for header
+            context.fill(this.x, this.y + 31, this.x + this.width, this.y + 32, URANIUM_ACCENT.getRGB());
+            
+            // Border
+            RenderUtils.renderRoundedQuad(context.getMatrices(), URANIUM_BORDER,
+                this.x, this.y, this.x + this.width, this.y + this.height,
+                topRadius, topRadius, bottomRadius, bottomRadius, 30.0);
+            
+            this.updateButtons(delta);
+            
+            if (this.extended && this.moduleButtons != null) {
+                this.renderModuleButtons(context, mouseX, mouseY, delta);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
     
     private String getCategoryIcon(Category category) {
-        switch (category.name.toString().toLowerCase()) {
+        if (category == null || category.name == null) return "◆";
+        String name = category.name.toString().toLowerCase();
+        switch (name) {
             case "combat": return COMBAT_ICON;
             case "movement": return MOVEMENT_ICON;
             case "player": return PLAYER_ICON;
@@ -132,22 +144,32 @@ public final class CategoryWindow {
     }
 
     private void renderModuleButtons(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
+        if (this.moduleButtons == null) return;
         for (ModuleButton module : this.moduleButtons) {
-            module.render(context, mouseX, mouseY, delta);
+            if (module != null) {
+                module.render(context, mouseX, mouseY, delta);
+            }
         }
     }
 
     public void keyPressed(final int keyCode, final int scanCode, final int modifiers) {
         if (keyCode <= 0) return;
+        if (this.moduleButtons == null) return;
         for (ModuleButton moduleButton : this.moduleButtons) {
-            moduleButton.keyPressed(keyCode, scanCode, modifiers);
+            if (moduleButton != null) {
+                moduleButton.keyPressed(keyCode, scanCode, modifiers);
+            }
         }
     }
 
     public void onGuiClose() {
         this.currentColor = null;
-        for (ModuleButton moduleButton : this.moduleButtons) {
-            moduleButton.onGuiClose();
+        if (this.moduleButtons != null) {
+            for (ModuleButton moduleButton : this.moduleButtons) {
+                if (moduleButton != null) {
+                    moduleButton.onGuiClose();
+                }
+            }
         }
     }
 
@@ -157,28 +179,34 @@ public final class CategoryWindow {
                 this.extended = !this.extended;
             }
         }
-        if (this.extended) {
+        if (this.extended && this.moduleButtons != null) {
             for (ModuleButton moduleButton : this.moduleButtons) {
-                moduleButton.mouseClicked(mouseX, mouseY, button);
+                if (moduleButton != null) {
+                    moduleButton.mouseClicked(mouseX, mouseY, button);
+                }
             }
         }
     }
 
     public void mouseDragged(final double mouseX, final double mouseY, final int button, final double deltaX, final double deltaY) {
-        if (this.extended) {
+        if (this.extended && this.moduleButtons != null) {
             for (ModuleButton moduleButton : this.moduleButtons) {
-                moduleButton.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+                if (moduleButton != null) {
+                    moduleButton.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+                }
             }
         }
     }
 
     public void updateButtons(final float delta) {
+        if (this.moduleButtons == null) return;
         int currentHeight = this.height;
         for (final ModuleButton button : this.moduleButtons) {
+            if (button == null) continue;
             final Animation animation = button.animation;
             double targetHeight;
             if (button.extended) {
-                targetHeight = this.height * (button.settings.size() + 1);
+                targetHeight = this.height * (button.settings != null ? button.settings.size() + 1 : 1);
             } else {
                 targetHeight = this.height;
             }
@@ -190,8 +218,12 @@ public final class CategoryWindow {
     }
 
     public void mouseReleased(final double mouseX, final double mouseY, final int button) {
-        for (ModuleButton moduleButton : this.moduleButtons) {
-            moduleButton.mouseReleased(mouseX, mouseY, button);
+        if (this.moduleButtons != null) {
+            for (ModuleButton moduleButton : this.moduleButtons) {
+                if (moduleButton != null) {
+                    moduleButton.mouseReleased(mouseX, mouseY, button);
+                }
+            }
         }
     }
 
