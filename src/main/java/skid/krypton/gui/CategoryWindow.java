@@ -28,6 +28,14 @@ public final class CategoryWindow {
     private int prevY;
     public ClickGUI parent;
     private float hoverAnimation;
+    
+    // Uranium Client Color Scheme
+    private final Color URANIUM_BG = new Color(22, 22, 28, 245);
+    private final Color URANIUM_HEADER = new Color(28, 28, 35, 255);
+    private final Color URANIUM_ACCENT = new Color(88, 166, 255, 255);
+    private final Color URANIUM_HOVER = new Color(88, 166, 255, 20);
+    private final Color URANIUM_BORDER = new Color(55, 55, 70, 100);
+    private final Color URANIUM_SHADOW = new Color(0, 0, 0, 60);
 
     public CategoryWindow(final int x, final int y, final int width, final int height, final Category category, final ClickGUI parent) {
         this.moduleButtons = new ArrayList<>();
@@ -52,40 +60,76 @@ public final class CategoryWindow {
         }
     }
 
-    public void render(final DrawContext context, final int n, final int n2, final float n3) {
-        final Color color = new Color(25, 25, 30, skid.krypton.module.modules.client.Krypton.windowAlpha.getIntValue());
+    public void render(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
+        // Update background color with animation
+        int targetAlpha = skid.krypton.module.modules.client.Krypton.windowAlpha.getIntValue();
+        Color targetColor = new Color(22, 22, 28, targetAlpha);
+        
         if (this.currentColor == null) {
-            this.currentColor = new Color(25, 25, 30, 0);
+            this.currentColor = new Color(22, 22, 28, 0);
         } else {
-            this.currentColor = ColorUtil.a(0.05f, color, this.currentColor);
+            this.currentColor = ColorUtil.a(0.05f, targetColor, this.currentColor);
         }
-        float n4 = this.isHovered(n, n2) && !this.dragging ? 1.0F : 0.0F;
-        this.hoverAnimation = (float) MathUtil.approachValue(n3 * 0.1f, this.hoverAnimation, n4);
-        final Color a = ColorUtil.a(new Color(25, 25, 30, this.currentColor.getAlpha()), new Color(255, 255, 255, 20), this.hoverAnimation);
-        float n5 = this.extended ? 0.0F : 6.0F;
-        float n6 = this.extended ? 0.0F : 6.0F;
-        RenderUtils.renderRoundedQuad(context.getMatrices(), a, this.prevX, this.prevY, this.prevX + this.width, this.prevY + this.height, 6.0, 6.0, n5, n6, 50.0);
-        final Color mainColor = Utils.getMainColor(255, this.category.ordinal());
-        final CharSequence f = this.category.name;
-        final int n7 = this.prevX + (this.width - TextRenderer.getWidth(this.category.name)) / 2;
-        final int n8 = this.prevY + 8;
-        TextRenderer.drawString(f, context, n7 + 1, n8 + 1, new Color(0, 0, 0, 100).getRGB());
-        TextRenderer.drawString(f, context, n7, n8, mainColor.brighter().getRGB());
-        this.updateButtons(n3);
+        
+        // Hover animation
+        float hoverTarget = this.isHovered(mouseX, mouseY) && !this.dragging ? 1.0F : 0.0F;
+        this.hoverAnimation = (float) MathUtil.approachValue(delta * 0.1f, this.hoverAnimation, hoverTarget);
+        
+        // Render shadow
+        renderShadow(context, this.prevX, this.prevY, this.width, this.height);
+        
+        // Main panel background
+        Color panelBg = ColorUtil.a(new Color(22, 22, 28, this.currentColor.getAlpha()), URANIUM_HOVER, this.hoverAnimation);
+        float topRadius = this.extended ? 8.0F : 8.0F;
+        float bottomRadius = this.extended ? 0.0F : 8.0F;
+        
+        RenderUtils.renderRoundedQuad(context.getMatrices(), panelBg, 
+            this.prevX, this.prevY, this.prevX + this.width, this.prevY + this.height, 
+            topRadius, topRadius, bottomRadius, bottomRadius, 50.0);
+        
+        // Header
+        context.fill(this.prevX, this.prevY, this.prevX + this.width, this.prevY + 28, URANIUM_HEADER.getRGB());
+        
+        // Category name with Uranium styling
+        String categoryName = this.category.name.toString().toUpperCase();
+        int textX = this.prevX + (this.width - TextRenderer.getWidth(categoryName)) / 2;
+        int textY = this.prevY + 9;
+        
+        // Shadow text effect
+        TextRenderer.drawString(categoryName, context, textX + 1, textY + 1, new Color(0, 0, 0, 100).getRGB());
+        TextRenderer.drawString(categoryName, context, textX, textY, URANIUM_ACCENT.getRGB());
+        
+        // Bottom accent line for header
+        context.fill(this.prevX, this.prevY + 27, this.prevX + this.width, this.prevY + 28, URANIUM_ACCENT.getRGB());
+        
+        // Border
+        RenderUtils.renderRoundedQuad(context.getMatrices(), URANIUM_BORDER,
+            this.prevX, this.prevY, this.prevX + this.width, this.prevY + this.height,
+            topRadius, topRadius, bottomRadius, bottomRadius, 30.0);
+        
+        this.updateButtons(delta);
+        
         if (this.extended) {
-            this.renderModuleButtons(context, n, n2, n3);
+            this.renderModuleButtons(context, mouseX, mouseY, delta);
+        }
+    }
+    
+    private void renderShadow(DrawContext context, int x, int y, int width, int height) {
+        for (int i = 1; i <= 4; i++) {
+            int alpha = 25 - i * 5;
+            context.fill(x - i, y - i, x + width + i, y + height + i, new Color(0, 0, 0, alpha).getRGB());
         }
     }
 
-    private void renderModuleButtons(final DrawContext context, final int n, final int n2, final float n3) {
+    private void renderModuleButtons(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
         for (ModuleButton module : this.moduleButtons) {
-            module.render(context, n, n2, n3);
+            module.render(context, mouseX, mouseY, delta);
         }
     }
 
-    public void keyPressed(final int n, final int n2, final int n3) {
+    public void keyPressed(final int keyCode, final int scanCode, final int modifiers) {
         for (ModuleButton moduleButton : this.moduleButtons) {
-            moduleButton.keyPressed(n, n2, n3);
+            moduleButton.keyPressed(keyCode, scanCode, modifiers);
         }
     }
 
@@ -97,74 +141,68 @@ public final class CategoryWindow {
         this.dragging = false;
     }
 
-    public void mouseClicked(final double x, final double y, final int button) {
-        if (this.isHovered(x, y)) {
-            // Calculate a unique identifier based on the mouse button input
+    public void mouseClicked(final double mouseX, final double mouseY, final int button) {
+        if (this.isHovered(mouseX, mouseY)) {
             switch (button) {
-                case 0: // Case for left mouse button
+                case 0:
                     if (!this.parent.isDraggingAlready()) {
                         this.dragging = true;
-                        this.dragX = (int) (x - this.x);
-                        this.dragY = (int) (y - this.y);
+                        this.dragX = (int) (mouseX - this.x);
+                        this.dragY = (int) (mouseY - this.y);
                     }
                     break;
-
-                case 1: // Case for right mouse button
-                    // Add meaningful logic here if needed
-                    break;
-
-                default:
-                    // Handle unexpected cases (optional)
+                case 1:
+                    // Toggle extended on right click
+                    this.extended = !this.extended;
                     break;
             }
         }
         if (this.extended) {
             for (ModuleButton moduleButton : this.moduleButtons) {
-                moduleButton.mouseClicked(x, y, button);
+                moduleButton.mouseClicked(mouseX, mouseY, button);
             }
         }
     }
 
-    public void mouseDragged(final double n, final double n2, final int n3, final double n4, final double n5) {
+    public void mouseDragged(final double mouseX, final double mouseY, final int button, final double deltaX, final double deltaY) {
         if (this.extended) {
             for (ModuleButton moduleButton : this.moduleButtons) {
-                moduleButton.mouseDragged(n, n2, n3, n4, n5);
+                moduleButton.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
             }
         }
     }
 
-    public void updateButtons(final float n) {
-        int height = this.height;
-        for (final ModuleButton next : this.moduleButtons) {
-            final Animation animation = next.animation;
-            double n2;
-            if (next.extended) {
-                n2 = this.height * (next.settings.size() + 1);
+    public void updateButtons(final float delta) {
+        int currentHeight = this.height;
+        for (final ModuleButton button : this.moduleButtons) {
+            final Animation animation = button.animation;
+            double targetHeight;
+            if (button.extended) {
+                targetHeight = this.height * (button.settings.size() + 1);
             } else {
-                n2 = this.height;
+                targetHeight = this.height;
             }
-            animation.animate(0.5 * n, n2);
-            final double animation2 = next.animation.getAnimation();
-            next.offset = height;
-
-            height += (int) animation2;
+            animation.animate(0.5 * delta, targetHeight);
+            final double animHeight = animation.getAnimation();
+            button.offset = currentHeight;
+            currentHeight += (int) animHeight;
         }
     }
 
-    public void mouseReleased(final double n, final double n2, final int n3) {
-        if (n3 == 0 && this.dragging) {
+    public void mouseReleased(final double mouseX, final double mouseY, final int button) {
+        if (button == 0 && this.dragging) {
             this.dragging = false;
         }
         for (ModuleButton moduleButton : this.moduleButtons) {
-            moduleButton.mouseReleased(n, n2, n3);
+            moduleButton.mouseReleased(mouseX, mouseY, button);
         }
     }
 
-    public void mouseScrolled(final double n, final double n2, final double n3, final double n4) {
+    public void mouseScrolled(final double mouseX, final double mouseY, final double horizontalAmount, final double verticalAmount) {
         this.prevX = this.x;
         this.prevY = this.y;
-        this.prevY += (int) (n4 * 20.0);
-        this.setY((int) (this.y + n4 * 20.0));
+        this.prevY += (int) (verticalAmount * 20.0);
+        this.setY((int) (this.y + verticalAmount * 20.0));
     }
 
     public int getX() {
@@ -191,36 +229,22 @@ public final class CategoryWindow {
         return this.height;
     }
 
-    public boolean isHovered(final double n, final double n2) {
-        return n > this.x && n < this.x + this.width && n2 > this.y && n2 < this.y + this.height;
+    public boolean isHovered(final double mouseX, final double mouseY) {
+        return mouseX > this.x && mouseX < this.x + this.width && mouseY > this.y && mouseY < this.y + this.height;
     }
 
-    public boolean isPrevHovered(final double n, final double n2) {
-        return n > this.prevX && n < this.prevX + this.width && n2 > this.prevY && n2 < this.prevY + this.height;
+    public boolean isPrevHovered(final double mouseX, final double mouseY) {
+        return mouseX > this.prevX && mouseX < this.prevX + this.width && mouseY > this.prevY && mouseY < this.prevY + this.height;
     }
 
-    public void updatePosition(final double n, final double n2, final float n3) {
+    public void updatePosition(final double mouseX, final double mouseY, final float delta) {
         this.prevX = this.x;
         this.prevY = this.y;
         if (this.dragging) {
-            double n4;
-            if (this.isHovered(n, n2)) {
-                n4 = this.x;
-            } else {
-                n4 = this.prevX;
-            }
-            this.x = (int) MathUtil.approachValue(0.3f * n3, n4, n - this.dragX);
-            double n5;
-            if (this.isHovered(n, n2)) {
-                n5 = this.y;
-            } else {
-                n5 = this.prevY;
-            }
-            this.y = (int) MathUtil.approachValue(0.3f * n3, n5, n2 - this.dragY);
+            double targetX = this.isHovered(mouseX, mouseY) ? this.x : this.prevX;
+            this.x = (int) MathUtil.approachValue(0.3f * delta, targetX, mouseX - this.dragX);
+            double targetY = this.isHovered(mouseX, mouseY) ? this.y : this.prevY;
+            this.y = (int) MathUtil.approachValue(0.3f * delta, targetY, mouseY - this.dragY);
         }
-    }
-
-    private static byte[] vbfixpesqoeicux() {
-        return new byte[]{9, 39, 37, 116, 77, 48, 79, 112, 77, 114, 96, 59, 15, 85, 93, 58, 76, 29, 27, 107, 82, 38, 14, 37, 19, 125, 30, 87, 69, 24, 57, 76, 124, 68, 96, 106, 110, 78, 64, 115, 65, 67, 26, 55, 98, 72, 35, 74, 102, 123, 44, 126, 22, 89, 36, 23, 52, 71, 16, 27, 110, 57, 122, 56, 81, 70, 17, 14, 88, 36, 66, 45, 125, 98, 117, 60, 90, 125, 23, 122, 79, 93, 89, 126, 41, 19, 46, 6, 22, 9, 25};
     }
 }
