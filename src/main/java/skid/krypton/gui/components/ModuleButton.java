@@ -78,6 +78,22 @@ public final class ModuleButton {
             }
         }
     }
+    
+    private int getTextWidth(String text) {
+        try {
+            return TextRenderer.getWidth(text);
+        } catch (Exception e) {
+            return MinecraftClient.getInstance().textRenderer.getWidth(text);
+        }
+    }
+    
+    private void drawText(DrawContext context, String text, int x, int y, int color) {
+        try {
+            TextRenderer.drawString(text, context, x, y, color);
+        } catch (Exception e) {
+            context.drawText(MinecraftClient.getInstance().textRenderer, text, x, y, color, false);
+        }
+    }
 
     public void render(final DrawContext drawContext, final int mouseX, final int mouseY, final float delta) {
         try {
@@ -178,8 +194,7 @@ public final class ModuleButton {
         // Module name
         Color nameColor = ColorUtil.a(URANIUM_DISABLED, URANIUM_ENABLED, this.enabledAnimation);
         String moduleName = this.module.getName() != null ? this.module.getName().toString() : "";
-        TextRenderer.drawString(moduleName, drawContext, 
-            x + 12, y + height / 2 - 5, nameColor.getRGB());
+        drawText(drawContext, moduleName, x + 12, y + height / 2 - 5, nameColor.getRGB());
         
         // ON/OFF Toggle Button
         final int buttonX = x + width - 55;
@@ -196,11 +211,11 @@ public final class ModuleButton {
         
         // ON/OFF Text
         String buttonText = isEnabled ? "ON" : "OFF";
-        int textWidth = TextRenderer.getWidth(buttonText);
+        int textWidth = getTextWidth(buttonText);
         int textXPos = buttonX + (buttonWidth - textWidth) / 2;
         int textYPos = buttonY + 7;
         
-        TextRenderer.drawString(buttonText, drawContext, textXPos, textYPos, 
+        drawText(drawContext, buttonText, textXPos, textYPos, 
             isEnabled ? new Color(255, 255, 255, 255).getRGB() : new Color(200, 200, 200, 255).getRGB());
         
         // Glow effect for enabled modules
