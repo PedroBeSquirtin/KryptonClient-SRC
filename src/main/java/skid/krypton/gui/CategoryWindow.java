@@ -31,7 +31,14 @@ public final class CategoryWindow {
     private final Color URANIUM_ACCENT = new Color(100, 255, 100, 255);
     private final Color URANIUM_HOVER = new Color(100, 255, 100, 30);
     private final Color URANIUM_BORDER = new Color(80, 120, 80, 150);
-    private final Color URANIUM_TEXT = new Color(220, 255, 220, 255);
+    
+    // Icons for categories
+    private final String COMBAT_ICON = "⚔️";
+    private final String MOVEMENT_ICON = "🏃";
+    private final String PLAYER_ICON = "👤";
+    private final String RENDER_ICON = "👁️";
+    private final String WORLD_ICON = "🌍";
+    private final String CLIENT_ICON = "⚙️";
 
     public CategoryWindow(final int x, final int y, final int width, final int height, final Category category, final ClickGUI parent) {
         this.moduleButtons = new ArrayList<>();
@@ -77,31 +84,33 @@ public final class CategoryWindow {
             renderShadow(context, this.x, this.y, this.width, this.height);
             
             Color panelBg = ColorUtil.a(new Color(20, 28, 20, this.currentColor.getAlpha()), URANIUM_HOVER, this.hoverAnimation);
-            float topRadius = this.extended ? 8.0F : 8.0F;
-            float bottomRadius = this.extended ? 0.0F : 8.0F;
+            float topRadius = this.extended ? 12.0F : 12.0F;
+            float bottomRadius = this.extended ? 0.0F : 12.0F;
             
             RenderUtils.renderRoundedQuad(context.getMatrices(), panelBg, 
                 this.x, this.y, this.x + this.width, this.y + this.height, 
                 topRadius, topRadius, bottomRadius, bottomRadius, 50.0);
             
-            // Header background
-            context.fill(this.x, this.y, this.x + this.width, this.y + 32, URANIUM_HEADER.getRGB());
+            // Header background with rounded top
+            context.fill(this.x, this.y, this.x + this.width, this.y + 36, URANIUM_HEADER.getRGB());
             
-            // Draw category name directly without icon first to test
+            // Get icon for category
+            String icon = getCategoryIcon(this.category);
             String categoryName = this.category.name.toString();
+            String fullText = icon + " " + categoryName;
             
             // Calculate text position
-            int textX = this.x + (this.width - TextRenderer.getWidth(categoryName)) / 2;
-            int textY = this.y + 12;
+            int textX = this.x + (this.width - TextRenderer.getWidth(fullText)) / 2;
+            int textY = this.y + 13;
             
-            // Draw text with shadow
-            TextRenderer.drawString(categoryName, context, textX + 1, textY + 1, new Color(0, 0, 0, 100).getRGB());
-            TextRenderer.drawString(categoryName, context, textX, textY, URANIUM_ACCENT.getRGB());
+            // Draw shadow text effect
+            TextRenderer.drawString(fullText, context, textX + 1, textY + 1, new Color(0, 0, 0, 100).getRGB());
+            TextRenderer.drawString(fullText, context, textX, textY, URANIUM_ACCENT.getRGB());
             
             // Bottom accent line for header
-            context.fill(this.x, this.y + 31, this.x + this.width, this.y + 32, URANIUM_ACCENT.getRGB());
+            context.fill(this.x, this.y + 35, this.x + this.width, this.y + 36, URANIUM_ACCENT.getRGB());
             
-            // Border
+            // Border with rounded corners
             RenderUtils.renderRoundedQuad(context.getMatrices(), URANIUM_BORDER,
                 this.x, this.y, this.x + this.width, this.y + this.height,
                 topRadius, topRadius, bottomRadius, bottomRadius, 30.0);
@@ -116,10 +125,24 @@ public final class CategoryWindow {
         }
     }
     
+    private String getCategoryIcon(Category category) {
+        if (category == null || category.name == null) return "◆";
+        String name = category.name.toString().toLowerCase();
+        switch (name) {
+            case "combat": return COMBAT_ICON;
+            case "movement": return MOVEMENT_ICON;
+            case "player": return PLAYER_ICON;
+            case "render": return RENDER_ICON;
+            case "world": return WORLD_ICON;
+            case "client": return CLIENT_ICON;
+            default: return "◆";
+        }
+    }
+    
     private void renderShadow(DrawContext context, int x, int y, int width, int height) {
-        for (int i = 1; i <= 4; i++) {
-            int alpha = 25 - i * 5;
-            context.fill(x - i, y - i, x + width + i, y + height + i, new Color(0, 0, 0, alpha).getRGB());
+        for (int i = 1; i <= 5; i++) {
+            int alpha = 20 - i * 3;
+            context.fill(x - i, y - i, x + width + i, y + height + i, new Color(0, 0, 0, Math.max(0, alpha)).getRGB());
         }
     }
 
@@ -228,6 +251,6 @@ public final class CategoryWindow {
     }
 
     public boolean isHovered(final double mouseX, final double mouseY) {
-        return mouseX > this.x && mouseX < this.x + this.width && mouseY > this.y && mouseY < this.y + 32;
+        return mouseX > this.x && mouseX < this.x + this.width && mouseY > this.y && mouseY < this.y + 36;
     }
 }
