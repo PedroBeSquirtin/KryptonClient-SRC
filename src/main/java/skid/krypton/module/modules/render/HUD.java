@@ -222,7 +222,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - Center is player, facing direction is TOP of radar with arrow head
+    // RADAR - FIXED: Arrow points where you're looking, cardinal directions correct
     private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
         int range = (int) radarRange.getValue();
@@ -237,15 +237,17 @@ public final class HUD extends Module {
         int centerY = y + size / 2;
         
         // Get player's facing direction (yaw in degrees)
+        // Minecraft: 0 = South, 90 = West, 180 = North, 270 = East
         float yaw = mc.player.getYaw();
-        // Convert to radians - we want the direction you're facing to be at the TOP
-        double rad = Math.toRadians(yaw);
+        // Adjust so that the direction you're facing goes to the TOP of the radar
+        // When facing North (180°), it should show North at the top
+        // So we need to rotate the radar by (yaw - 180)
+        double rad = Math.toRadians(-yaw + 180);
         
         // Draw + crosshair with arrow head on top line
         int armLength = size / 2 - 8;
-        int arrowSize = 8;
         
-        // Draw the top line of the + (with arrow head at the end)
+        // Draw the top line of the + (with arrow head at the end - points where you're looking)
         for (int i = 0; i <= armLength; i++) {
             int px = centerX;
             int py = centerY - i;
@@ -283,11 +285,11 @@ public final class HUD extends Module {
         // Draw center dot (player)
         ctx.fill(centerX - 1, centerY - 1, centerX + 1, centerY + 1, URANIUM_GREEN.getRGB());
         
-        // Draw cardinal directions - rotating based on player facing
+        // Draw cardinal directions - FIXED: Correct orientation
         int compassDistance = size / 2 - 15;
         
-        // Calculate positions for cardinal directions (rotate based on yaw)
-        // So the direction you're facing goes to the TOP
+        // Calculate positions for cardinal directions based on rotation
+        // North (0° relative) goes to the top when facing North
         int northX = centerX + (int)(Math.sin(rad) * compassDistance);
         int northY = centerY - (int)(Math.cos(rad) * compassDistance);
         int southX = centerX - (int)(Math.sin(rad) * compassDistance);
@@ -315,7 +317,7 @@ public final class HUD extends Module {
             
             // Calculate angle relative to your facing direction
             double angle = Math.atan2(dz, dx);
-            double relAngle = angle - rad;
+            double relAngle = angle - Math.toRadians(yaw);
             
             // Convert to radar coordinates with forward direction going to TOP
             double radarX = Math.sin(relAngle) * distance;
@@ -368,7 +370,7 @@ public final class HUD extends Module {
                             
                             // Calculate angle relative to your facing direction
                             double angle = Math.atan2(dz, dx);
-                            double relAngle = angle - rad;
+                            double relAngle = angle - Math.toRadians(yaw);
                             
                             // Convert to radar coordinates with forward direction going to TOP
                             double radarX = Math.sin(relAngle) * distance;
