@@ -5,7 +5,6 @@ import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Identifier;
 import skid.krypton.Krypton;
 import skid.krypton.event.EventListener;
 import skid.krypton.event.events.Render2DEvent;
@@ -43,7 +42,6 @@ public final class HUD extends Module {
     private final BooleanSetting showPotions = new BooleanSetting("Potions", true);
     private final NumberSetting radarSize = new NumberSetting("Radar Size", 100, 250, 180, 5);
     private final NumberSetting radarRange = new NumberSetting("Radar Range", 10, 80, 40, 5);
-    private final NumberSetting potionSize = new NumberSetting("Potion Size", 50, 150, 80, 5);
     
     private final ModeSetting<ModuleListSorting> moduleSortingMode =
             new ModeSetting<>("Sort Mode", ModuleListSorting.LENGTH, ModuleListSorting.class);
@@ -53,7 +51,7 @@ public final class HUD extends Module {
 
         this.addSettings(
                 showWatermark, showInfo, showModules, showTime, showCoordinates,
-                showRadar, radarSize, radarRange, showPotions, potionSize, moduleSortingMode
+                showRadar, radarSize, radarRange, showPotions, moduleSortingMode
         );
     }
 
@@ -91,16 +89,16 @@ public final class HUD extends Module {
                 renderCoordinates(ctx);
             }
             
-            // LEFT SIDE - Potions (below coordinates, using Minecraft's built-in potion HUD moved)
+            // LEFT SIDE - Potions (below coordinates)
             if (showPotions.getValue()) {
-                renderVanillaPotions(ctx);
+                renderPotions(ctx);
             }
 
             RenderUtils.scaledProjection();
         }
     }
 
-    // TOP RIGHT - Enabled Modules (fixed spacing)
+    // TOP RIGHT - Enabled Modules
     private void renderModules(DrawContext ctx, int screenWidth, int screenHeight) {
         List<Module> list = getSortedModules();
         int padding = 12;
@@ -207,7 +205,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - With rotating cardinal directions and + crosshair
+    // RADAR - Static +, rotating N E S W
     private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
         int range = (int) radarRange.getValue();
@@ -225,45 +223,23 @@ public final class HUD extends Module {
         float yaw = mc.player.getYaw();
         double rad = Math.toRadians(yaw);
         
-        // Draw + crosshair (rotates with player direction)
+        // Draw static + crosshair (doesn't rotate)
         int armLength = size / 3;
         
-        // Calculate rotated arm endpoints
-        int rightX = centerX + (int)(Math.sin(rad) * armLength);
-        int rightY = centerY + (int)(Math.cos(rad) * armLength);
-        int leftX = centerX - (int)(Math.sin(rad) * armLength);
-        int leftY = centerY - (int)(Math.cos(rad) * armLength);
-        int upX = centerX + (int)(Math.cos(rad) * armLength);
-        int upY = centerY - (int)(Math.sin(rad) * armLength);
-        int downX = centerX - (int)(Math.cos(rad) * armLength);
-        int downY = centerY + (int)(Math.sin(rad) * armLength);
+        // Draw horizontal line (left-right)
+        for (int i = -armLength; i <= armLength; i++) {
+            ctx.fill(centerX + i, centerY - 1, centerX + i + 1, centerY + 2, CROSSHAIR_COLOR.getRGB());
+        }
         
-        // Draw the + crosshair
-        for (int i = 0; i <= 20; i++) {
-            float t = i / 20f;
-            // Horizontal arm
-            int hx = (int)(centerX + (rightX - centerX) * t);
-            int hy = (int)(centerY + (rightY - centerY) * t);
-            ctx.fill(hx, hy, hx + 2, hy + 2, CROSSHAIR_COLOR.getRGB());
-            
-            int hx2 = (int)(centerX + (leftX - centerX) * t);
-            int hy2 = (int)(centerY + (leftY - centerY) * t);
-            ctx.fill(hx2, hy2, hx2 + 2, hy2 + 2, CROSSHAIR_COLOR.getRGB());
-            
-            // Vertical arm
-            int vx = (int)(centerX + (upX - centerX) * t);
-            int vy = (int)(centerY + (upY - centerY) * t);
-            ctx.fill(vx, vy, vx + 2, vy + 2, CROSSHAIR_COLOR.getRGB());
-            
-            int vx2 = (int)(centerX + (downX - centerX) * t);
-            int vy2 = (int)(centerY + (downY - centerY) * t);
-            ctx.fill(vx2, vy2, vx2 + 2, vy2 + 2, CROSSHAIR_COLOR.getRGB());
+        // Draw vertical line (up-down)
+        for (int i = -armLength; i <= armLength; i++) {
+            ctx.fill(centerX - 1, centerY + i, centerX + 2, centerY + i + 1, CROSSHAIR_COLOR.getRGB());
         }
         
         // Draw center dot
         ctx.fill(centerX - 2, centerY - 2, centerX + 2, centerY + 2, URANIUM_GREEN.getRGB());
         
-        // Draw rotating cardinal directions
+        // Draw rotating cardinal directions (N, E, S, W)
         int compassDistance = size / 2 - 15;
         int northX = centerX + (int)(Math.cos(rad) * compassDistance);
         int northY = centerY - (int)(Math.sin(rad) * compassDistance);
@@ -351,46 +327,71 @@ public final class HUD extends Module {
         TextRenderer.drawString(coords, ctx, x + padding, y + 6, TEXT_GRAY.getRGB());
     }
 
-    // Vanilla Potions - Moved to custom position
-    private void renderVanillaPotions(DrawContext ctx) {
+    // Potions - Simple and clean
+    private void renderPotions(DrawContext ctx) {
         List<StatusEffectInstance> effects = new ArrayList<>(mc.player.getStatusEffects());
         if (effects.isEmpty()) return;
         
-        int size = (int) potionSize.getValue();
+        int padding = 10;
+        int lineHeight = 18;
         int x = 12;
         int y = getTopLeftHeight() + (int) radarSize.getValue() + 16 + 32;
         
-        // Draw each potion using Minecraft's built-in rendering but at custom position
-        int potionY = y;
+        int potionCount = effects.size();
+        int bgHeight = potionCount * lineHeight + padding;
+        int maxWidth = 0;
+        
         for (StatusEffectInstance effect : effects) {
-            // Draw potion background
-            ctx.getMatrices().push();
-            ctx.getMatrices().translate(x, potionY, 0);
-            ctx.getMatrices().scale(0.8f, 0.8f, 1);
+            String text = formatPotionName(effect) + " " + (effect.getDuration() / 20) + "s";
+            int w = TextRenderer.getWidth(text);
+            if (w > maxWidth) maxWidth = w;
+        }
+        
+        int bgWidth = maxWidth + padding * 2;
+        
+        // Background
+        RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
+        
+        // Potion list with colored dots
+        int textY = y + padding / 2 + 2;
+        for (StatusEffectInstance effect : effects) {
+            String text = formatPotionName(effect) + " " + (effect.getDuration() / 20) + "s";
             
-            // Draw the vanilla potion HUD element
-            int duration = effect.getDuration() / 20;
-            String name = effect.getEffectType().value().getName().getString();
-            String text = name + " " + duration;
-            
-            // Simple background for each potion
-            int textWidth = TextRenderer.getWidth(text);
-            RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, 0, 0, textWidth + 16, 24, 6, 6, 6, 6, 50);
-            
-            // Draw potion effect icon (colored circle)
-            RenderUtils.renderCircle(ctx.getMatrices(), getPotionColor(effect), 8, 12, 8, 16);
+            // Draw colored dot
+            RenderUtils.renderCircle(ctx.getMatrices(), getPotionColor(effect), x + padding + 4, textY + 5, 4, 12);
             
             // Draw text
-            TextRenderer.drawString(text, ctx, 20, 6, TEXT_GRAY.getRGB());
-            
-            ctx.getMatrices().pop();
-            potionY += 28;
+            TextRenderer.drawString(text, ctx, x + padding + 12, textY, TEXT_GRAY.getRGB());
+            textY += lineHeight;
+        }
+    }
+
+    private String formatPotionName(StatusEffectInstance effect) {
+        String name = effect.getEffectType().value().getName().getString();
+        int amplifier = effect.getAmplifier();
+        if (amplifier > 0) {
+            String roman = getRomanNumeral(amplifier + 1);
+            name = name + " " + roman;
+        }
+        return name;
+    }
+
+    private String getRomanNumeral(int num) {
+        switch (num) {
+            case 1: return "I";
+            case 2: return "II";
+            case 3: return "III";
+            case 4: return "IV";
+            case 5: return "V";
+            default: return String.valueOf(num);
         }
     }
 
     private Color getPotionColor(StatusEffectInstance effect) {
         String name = effect.getEffectType().value().getName().getString().toLowerCase();
         if (name.contains("speed")) return new Color(100, 200, 255, 200);
+        if (name.contains("slowness")) return new Color(100, 100, 150, 200);
+        if (name.contains("haste")) return new Color(200, 200, 100, 200);
         if (name.contains("strength")) return new Color(255, 100, 100, 200);
         if (name.contains("jump boost")) return new Color(100, 255, 100, 200);
         if (name.contains("regeneration")) return new Color(255, 100, 200, 200);
@@ -400,6 +401,8 @@ public final class HUD extends Module {
         if (name.contains("invisibility")) return new Color(150, 150, 150, 200);
         if (name.contains("night vision")) return new Color(100, 200, 100, 200);
         if (name.contains("poison")) return new Color(100, 150, 50, 200);
+        if (name.contains("wither")) return new Color(50, 50, 50, 200);
+        if (name.contains("absorption")) return new Color(255, 200, 100, 200);
         return new Color(200, 200, 200, 200);
     }
 
@@ -438,7 +441,10 @@ public final class HUD extends Module {
     private String getPingInfo() {
         if (mc.getNetworkHandler() != null && mc.player != null) {
             PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
-            return entry != null ? entry.getLatency() + " ms" : "0 ms";
+            if (entry != null) {
+                int ping = entry.getLatency();
+                return ping + " ms";
+            }
         }
         return "0 ms";
     }
