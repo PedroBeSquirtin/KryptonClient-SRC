@@ -26,12 +26,12 @@ public final class ModuleButton {
     public Color currentAlpha;
     public Animation animation;
     
-    // Clean Green Color Scheme - Darker green for ON button
+    // Clean Green Color Scheme
     private final Color MODULE_BG = new Color(22, 30, 22, 235);
-    private final Color HOVER_BG = new Color(70, 180, 70, 20);
+    private final Color HOVER_BG = new Color(100, 220, 100, 20);
     private final Color BORDER_COLOR = new Color(65, 95, 65, 120);
     private final Color GLOW_GREEN = new Color(70, 180, 70, 60);
-    private final Color BUTTON_ON = new Color(50, 140, 50, 255);  // Darker green
+    private final Color BUTTON_ON = new Color(50, 140, 50, 255);
     private final Color BUTTON_OFF = new Color(55, 55, 65, 200);
     private final Color TEXT_WHITE = new Color(255, 255, 255, 255);
     
@@ -123,10 +123,14 @@ public final class ModuleButton {
                 this.renderSettings(drawContext, mouseX, mouseY, delta);
             }
             
+            // Tooltip on hover with centered text
             if (this.isHovered(mouseX, mouseY)) {
                 CharSequence description = this.module.getDescription();
                 if (description != null && description.length() > 0 && Krypton.INSTANCE.GUI != null) {
-                    Krypton.INSTANCE.GUI.setTooltip(description, mouseX + 10, mouseY + 10);
+                    // Center the tooltip text
+                    int textWidth = getTextWidth(description.toString());
+                    int tooltipX = mouseX + 15 - (textWidth / 2);
+                    Krypton.INSTANCE.GUI.setTooltip(description, tooltipX, mouseY + 15);
                 }
             }
         } catch (Exception e) {
@@ -171,14 +175,12 @@ public final class ModuleButton {
     private void renderModuleInfo(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
         if (this.module == null) return;
         
-        // Module name - left aligned
+        // Module name
         String moduleName = this.module.getName() != null ? this.module.getName().toString() : "";
         int textY = y + height / 2 - 4;
-        
-        // Draw module name in white
         drawText(drawContext, moduleName, x + 12, textY, TEXT_WHITE.getRGB());
         
-        // ON/OFF Button - perfectly centered vertically
+        // ON/OFF Button
         final int buttonWidth = 42;
         final int buttonHeight = 22;
         final int buttonX = x + width - buttonWidth - 12;
@@ -186,28 +188,27 @@ public final class ModuleButton {
         
         boolean isEnabled = this.module != null && this.module.isEnabled();
         
-        // Button background - darker green when ON
+        // Button background
         Color buttonBg = isEnabled ? BUTTON_ON : BUTTON_OFF;
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), buttonBg,
             buttonX, buttonY, buttonX + buttonWidth, buttonY + buttonHeight, 11, 11, 11, 11, 30);
         
-        // Button text - perfectly centered
+        // Button text - centered
         String buttonText = isEnabled ? "ON" : "OFF";
         int textWidth = getTextWidth(buttonText);
         int textXPos = buttonX + (buttonWidth - textWidth) / 2;
         int textYPos = buttonY + (buttonHeight - 8) / 2;
         
-        // Draw button text
         int textColor = isEnabled ? 0xFFFFFF : 0xAAAAAA;
         drawText(drawContext, buttonText, textXPos, textYPos, textColor);
         
-        // Subtle glow effect for enabled modules
+        // Glow effect for enabled
         if (isEnabled) {
             RenderUtils.renderRoundedQuad(drawContext.getMatrices(), GLOW_GREEN,
                 buttonX - 1, buttonY - 1, buttonX + buttonWidth + 1, buttonY + buttonHeight + 1, 12, 12, 12, 12, 30);
         }
         
-        // Left accent indicator for enabled modules
+        // Left accent for enabled
         if (isEnabled) {
             RenderUtils.renderRoundedQuad(drawContext.getMatrices(), BUTTON_ON,
                 x + 4, y + 4, x + 6, y + height - 4, 2, 2, 2, 2, 30);
