@@ -11,6 +11,7 @@ import skid.krypton.module.modules.misc.*;
 import skid.krypton.module.modules.render.HUD;
 import skid.krypton.module.modules.render.PlayerESP;
 import skid.krypton.module.modules.render.StorageESP;
+import skid.krypton.module.modules.render.Fullbright;
 import skid.krypton.module.modules.render.TargetHUD;
 import skid.krypton.module.setting.BindSetting;
 import skid.krypton.utils.EncryptedString;
@@ -62,6 +63,7 @@ public final class ModuleManager {
         this.a(new HUD());
         this.a(new PlayerESP());
         this.a(new StorageESP());
+        this.a(new Fullbright());
         this.a(new TargetHUD());
         this.a(new Krypton());
         this.a(new SelfDestruct());
