@@ -4,7 +4,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.registry.RegistryEntry;
 import skid.krypton.Krypton;
 import skid.krypton.event.EventListener;
 import skid.krypton.event.events.Render2DEvent;
@@ -36,7 +36,6 @@ public final class HUD extends Module {
     private final NumberSetting opacity = new NumberSetting("Opacity", 0.0, 1.0, 0.8f, 0.05f);
     private final NumberSetting cornerRadius = new NumberSetting("Corner Radius", 0.0, 10.0, 5.0, 0.5);
 
-    // Use the existing ModuleListSorting enum
     private final ModeSetting<ModuleListSorting> moduleSortingMode =
             new ModeSetting<>("Sort Mode", ModuleListSorting.LENGTH, ModuleListSorting.class);
 
@@ -98,7 +97,6 @@ public final class HUD extends Module {
         String server = mc.getCurrentServerEntry() == null ? "Singleplayer" : mc.getCurrentServerEntry().address;
 
         String text = fps + ping + server;
-
         int width = TextRenderer.getWidth(text);
 
         RenderUtils.renderRoundedQuad(ctx.getMatrices(),
@@ -111,7 +109,6 @@ public final class HUD extends Module {
     private void renderTime(DrawContext ctx, int w) {
         String time = timeFormatter.format(new Date());
         int width = TextRenderer.getWidth(time);
-
         int x = w / 2;
 
         RenderUtils.renderRoundedQuad(ctx.getMatrices(),
@@ -126,7 +123,6 @@ public final class HUD extends Module {
                 mc.player.getX(), mc.player.getY(), mc.player.getZ());
 
         int width = TextRenderer.getWidth(coords);
-
         RenderUtils.renderRoundedQuad(ctx.getMatrices(),
                 bg(), 5, h - 25, 5 + width + 10, h - 5, cornerRadius.getValue(), 15);
 
@@ -160,22 +156,20 @@ public final class HUD extends Module {
         }
     }
 
-    // POTIONS - Fixed to work with your Minecraft version
+    // POTIONS - fixed for RegistryEntry
     private void renderPotions(DrawContext ctx) {
         int x = 5;
         int y = 145;
         int offset = 0;
 
         for (StatusEffectInstance effect : mc.player.getStatusEffects()) {
-            // Get potion name - using getTranslationKey() which is more reliable
-            String effectName = effect.getEffectType().getTranslationKey();
-            // Remove the "effect.minecraft." prefix
-            effectName = effectName.replace("effect.minecraft.", "");
-            // Capitalize first letter
-            effectName = effectName.substring(0, 1).toUpperCase() + effectName.substring(1);
-            
-            String text = effectName + " " + (effect.getDuration() / 20) + "s";
+            RegistryEntry<?> effectEntry = effect.getEffectType();
+            String effectName = effectEntry.value().getTranslationKey(); // fixed
 
+            effectName = effectName.replace("effect.minecraft.", "");
+            effectName = effectName.substring(0, 1).toUpperCase() + effectName.substring(1);
+
+            String text = effectName + " " + (effect.getDuration() / 20) + "s";
             int width = TextRenderer.getWidth(text);
 
             RenderUtils.renderRoundedQuad(ctx.getMatrices(),
@@ -183,7 +177,6 @@ public final class HUD extends Module {
                     cornerRadius.getValue(), 15);
 
             TextRenderer.drawString(text, ctx, x + 5, y + offset + 4, primaryColor.getRGB());
-
             offset += 20;
         }
     }
@@ -200,7 +193,6 @@ public final class HUD extends Module {
                     cornerRadius.getValue(), 15);
 
             TextRenderer.drawString(notif, ctx, 8, y + 5, secondaryColor.getRGB());
-
             y += 25;
         }
     }
@@ -215,14 +207,12 @@ public final class HUD extends Module {
 
             String name = m.getName().toString();
             int width = TextRenderer.getWidth(name);
-
             int x = w - width - 10;
 
             RenderUtils.renderRoundedQuad(ctx.getMatrices(),
                     bg(), x - 3, y, w - 5, y + 18, cornerRadius.getValue(), 15);
 
             TextRenderer.drawString(name, ctx, x, y + 4, getColor(list.indexOf(m)).getRGB());
-
             y += 22;
         }
     }
@@ -241,26 +231,18 @@ public final class HUD extends Module {
     private List<Module> getSortedModules() {
         List<Module> modules = Krypton.INSTANCE.getModuleManager().b();
         List<Module> sorted = new ArrayList<>(modules);
-        
+
         switch (moduleSortingMode.getValue()) {
-            case LENGTH:
-                sorted.sort((a, b) -> Integer.compare(b.getName().length(), a.getName().length()));
-                break;
-            case ALPHABETICAL:
-                sorted.sort((a, b) -> a.getName().toString().compareToIgnoreCase(b.getName().toString()));
-                break;
-            case CATEGORY:
-                sorted.sort((a, b) -> a.getCategory().compareTo(b.getCategory()));
-                break;
+            case LENGTH -> sorted.sort((a, b) -> Integer.compare(b.getName().length(), a.getName().length()));
+            case ALPHABETICAL -> sorted.sort((a, b) -> a.getName().toString().compareToIgnoreCase(b.getName().toString()));
+            case CATEGORY -> sorted.sort((a, b) -> a.getCategory().compareTo(b.getCategory()));
         }
-        
         return sorted;
     }
 
     private String getPingInfo() {
         if (mc.getNetworkHandler() != null && mc.player != null) {
-            PlayerListEntry entry = mc.getNetworkHandler()
-                    .getPlayerListEntry(mc.player.getUuid());
+            PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(mc.player.getUuid());
             return entry != null ? "Ping: " + entry.getLatency() + "ms | " : "Ping: N/A | ";
         }
         return "Ping: N/A | ";
@@ -268,13 +250,11 @@ public final class HUD extends Module {
 
     public void addNotification(String message) {
         notifications.add(message);
-        while (notifications.size() > 5) {
-            notifications.remove(0);
-        }
+        while (notifications.size() > 5) notifications.remove(0);
     }
 
-    // This enum must exist in your client - it's already there from your original code
-    enum ModuleListSorting {
+    // ENUM
+    public enum ModuleListSorting {
         LENGTH, ALPHABETICAL, CATEGORY
     }
 }
