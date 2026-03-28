@@ -25,7 +25,6 @@ import java.util.List;
 
 public final class BlockESP extends Module {
 
-    // 🔥 SETTINGS PER BLOCK
     private static class BlockSettings {
         BooleanSetting enabled;
         BooleanSetting tracer;
@@ -51,10 +50,7 @@ public final class BlockESP extends Module {
         }
     }
 
-    // 🔥 BLOCK SETTINGS
     private final Map<Block, BlockSettings> blockSettings = new HashMap<>();
-
-    // 🔥 CACHE (THIS IS THE PERFORMANCE BOOST)
     private final Map<Block, List<BlockPos>> blockCache = new HashMap<>();
 
     private long lastScan = 0;
@@ -67,7 +63,6 @@ public final class BlockESP extends Module {
                 Category.RENDER
         );
 
-        // 🔥 REGISTER ALL BLOCKS
         for (Block block : Registries.BLOCK) {
             String name = block.getName().getString();
 
@@ -88,8 +83,6 @@ public final class BlockESP extends Module {
 
     @EventListener
     public void onRender3D(Render3DEvent event) {
-
-        // 🔥 ONLY SCAN EVERY 500ms
         if (System.currentTimeMillis() - lastScan > 500) {
             scanBlocks();
             lastScan = System.currentTimeMillis();
@@ -98,16 +91,17 @@ public final class BlockESP extends Module {
         renderBlocks(event);
     }
 
-    // 🔥 SCAN ONLY ENABLED BLOCKS
     private void scanBlocks() {
 
-        // clear old cache
         blockCache.values().forEach(List::clear);
 
         for (WorldChunk chunk : BlockUtil.getLoadedChunks().toList()) {
 
-            BlockPos min = chunk.getPos().getStartPos();
-            BlockPos max = chunk.getPos().getEndPos();
+            int startX = chunk.getPos().getStartX();
+            int startZ = chunk.getPos().getStartZ();
+
+            BlockPos min = new BlockPos(startX, mc.world.getBottomY(), startZ);
+            BlockPos max = new BlockPos(startX + 15, mc.world.getTopY() - 1, startZ + 15);
 
             for (BlockPos pos : BlockPos.iterate(min, max)) {
 
@@ -117,7 +111,6 @@ public final class BlockESP extends Module {
                 BlockSettings settings = blockSettings.get(block);
                 if (settings == null || !settings.enabled.getValue()) continue;
 
-                // 🔥 ADD ONLY SELECTED BLOCKS
                 blockCache.get(block).add(pos.toImmutable());
             }
         }
@@ -136,7 +129,6 @@ public final class BlockESP extends Module {
             matrices.translate(-camPos.x, -camPos.y, -camPos.z);
         }
 
-        // 🔥 RENDER ONLY CACHED BLOCKS
         for (Map.Entry<Block, List<BlockPos>> entry : blockCache.entrySet()) {
 
             Block block = entry.getKey();
@@ -148,7 +140,6 @@ public final class BlockESP extends Module {
 
             for (BlockPos pos : entry.getValue()) {
 
-                // 🔥 DISTANCE LIMIT (HUGE FPS BOOST)
                 if (mc.player.getPos().distanceTo(Vec3d.ofCenter(pos)) > 64) continue;
 
                 RenderUtils.renderFilledBox(
