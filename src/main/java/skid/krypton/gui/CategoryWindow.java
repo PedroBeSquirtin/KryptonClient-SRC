@@ -29,16 +29,9 @@ public final class CategoryWindow {
     // Clean Green Color Scheme
     private final Color BG_COLOR = new Color(18, 25, 18, 245);
     private final Color HEADER_COLOR = new Color(25, 35, 25, 255);
-    private final Color ACCENT_GREEN = new Color(120, 255, 120, 255);
-    private final Color HOVER_GREEN = new Color(120, 255, 120, 25);
+    private final Color ACCENT_GREEN = new Color(100, 220, 100, 255);
+    private final Color HOVER_GREEN = new Color(100, 220, 100, 25);
     private final Color BORDER_COLOR = new Color(70, 100, 70, 120);
-    
-    // Working icons using Unicode
-    private final String COMBAT_ICON = "⚔";
-    private final String MISC_ICON = "⚙";
-    private final String DONUT_ICON = "◉";
-    private final String RENDER_ICON = "👁";
-    private final String CLIENT_ICON = "◆";
 
     public CategoryWindow(final int x, final int y, final int width, final int height, final Category category, final ClickGUI parent) {
         this.moduleButtons = new ArrayList<>();
@@ -91,14 +84,11 @@ public final class CategoryWindow {
             
             context.fill(this.x, this.y, this.x + this.width, this.y + 32, HEADER_COLOR.getRGB());
             
-            String icon = getCategoryIcon(this.category);
             String categoryName = this.category.name.toString();
-            String fullText = icon + " " + categoryName;
+            int textX = this.x + (this.width - getTextWidth(categoryName)) / 2;
+            int textY = this.y + 11;
             
-            int textX = this.x + (this.width - getTextWidth(fullText)) / 2;
-            int textY = this.y + 12;
-            
-            drawText(context, fullText, textX, textY, ACCENT_GREEN.getRGB());
+            drawText(context, categoryName, textX, textY, ACCENT_GREEN.getRGB());
             
             context.fill(this.x, this.y + 31, this.x + this.width, this.y + 32, ACCENT_GREEN.getRGB());
             
@@ -129,19 +119,6 @@ public final class CategoryWindow {
             TextRenderer.drawString(text, context, x, y, color);
         } catch (Exception e) {
             context.drawText(MinecraftClient.getInstance().textRenderer, text, x, y, color, false);
-        }
-    }
-    
-    private String getCategoryIcon(Category category) {
-        if (category == null || category.name == null) return "?";
-        String name = category.name.toString().toLowerCase();
-        switch (name) {
-            case "combat": return COMBAT_ICON;
-            case "misc": return MISC_ICON;
-            case "donut": return DONUT_ICON;
-            case "render": return RENDER_ICON;
-            case "client": return CLIENT_ICON;
-            default: return "?";
         }
     }
 
