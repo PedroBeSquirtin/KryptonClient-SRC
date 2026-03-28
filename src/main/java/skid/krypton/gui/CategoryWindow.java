@@ -29,16 +29,15 @@ public final class CategoryWindow {
     // Clean Green Color Scheme
     private final Color BG_COLOR = new Color(18, 25, 18, 245);
     private final Color HEADER_COLOR = new Color(25, 35, 25, 255);
-    private final Color ACCENT_GREEN = new Color(100, 220, 100, 255); // Brighter
+    private final Color ACCENT_GREEN = new Color(100, 220, 100, 255);
     private final Color HOVER_GREEN = new Color(100, 220, 100, 25);
     private final Color BORDER_COLOR = new Color(70, 100, 70, 120);
     
-    // Proper icons for each category
+    // Icons for each category
     private final String COMBAT_ICON = "🗡️";
-    private final String MOVEMENT_ICON = "🏃";
-    private final String PLAYER_ICON = "👤";
+    private final String MISC_ICON = "📦";
+    private final String DONUT_ICON = "🍩";
     private final String RENDER_ICON = "👁️";
-    private final String WORLD_ICON = "🌍";
     private final String CLIENT_ICON = "💎";
 
     public CategoryWindow(final int x, final int y, final int width, final int height, final Category category, final ClickGUI parent) {
@@ -147,10 +146,9 @@ public final class CategoryWindow {
         String name = category.name.toString().toLowerCase();
         switch (name) {
             case "combat": return COMBAT_ICON;
-            case "movement": return MOVEMENT_ICON;
-            case "player": return PLAYER_ICON;
+            case "misc": return MISC_ICON;
+            case "donut": return DONUT_ICON;
             case "render": return RENDER_ICON;
-            case "world": return WORLD_ICON;
             case "client": return CLIENT_ICON;
             default: return "?";
         }
