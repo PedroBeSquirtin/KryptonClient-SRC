@@ -37,8 +37,8 @@ public final class HUD extends Module {
     private final NumberSetting opacity = new NumberSetting("Opacity", 0.0, 1.0, 0.8f, 0.05f);
     private final NumberSetting cornerRadius = new NumberSetting("Corner Radius", 0.0, 10.0, 5.0, 0.5);
 
-    private final ModeSetting<ModuleListSorting> moduleSortingMode =
-            new ModeSetting<>("Sort Mode", ModuleListSorting.LENGTH, ModuleListSorting.class);
+    private final ModeSetting<String> moduleSortingMode =
+            new ModeSetting<>("Sort Mode", "Length", new String[]{"Length", "Alphabetical", "Category"});
 
     private final BooleanSetting enableRainbowEffect = new BooleanSetting("Rainbow", false);
     private final NumberSetting rainbowSpeed = new NumberSetting("Rainbow Speed", 0.1f, 10.0, 2.0, 0.1f);
@@ -167,7 +167,7 @@ public final class HUD extends Module {
         int offset = 0;
 
         for (StatusEffectInstance effect : mc.player.getStatusEffects()) {
-            // Get potion name safely
+            // Get potion name using getTranslationKey() and then translate
             String effectName = effect.getEffectType().getName().getString();
             String text = effectName + " " + (effect.getDuration() / 20) + "s";
 
@@ -230,7 +230,7 @@ public final class HUD extends Module {
 
     private Color getColor(int i) {
         return enableRainbowEffect.getValue()
-                ? ColorUtil.a(rainbowSpeed.getIntValue() + i, 1)
+                ? ColorUtil.a((int)(rainbowSpeed.getValue()) + i, 1)
                 : primaryColor;
     }
 
@@ -238,16 +238,14 @@ public final class HUD extends Module {
         List<Module> modules = Krypton.INSTANCE.getModuleManager().b();
         List<Module> sorted = new ArrayList<>(modules);
         
-        switch (moduleSortingMode.getValue()) {
-            case LENGTH:
-                sorted.sort((a, b) -> Integer.compare(b.getName().length(), a.getName().length()));
-                break;
-            case ALPHABETICAL:
-                sorted.sort((a, b) -> a.getName().toString().compareToIgnoreCase(b.getName().toString()));
-                break;
-            case CATEGORY:
-                sorted.sort((a, b) -> a.getCategory().compareTo(b.getCategory()));
-                break;
+        String mode = moduleSortingMode.getValue();
+        
+        if (mode.equals("Length")) {
+            sorted.sort((a, b) -> Integer.compare(b.getName().length(), a.getName().length()));
+        } else if (mode.equals("Alphabetical")) {
+            sorted.sort((a, b) -> a.getName().toString().compareToIgnoreCase(b.getName().toString()));
+        } else if (mode.equals("Category")) {
+            sorted.sort((a, b) -> a.getCategory().compareTo(b.getCategory()));
         }
         
         return sorted;
@@ -268,9 +266,5 @@ public final class HUD extends Module {
         while (notifications.size() > 5) {
             notifications.remove(0);
         }
-    }
-
-    enum ModuleListSorting {
-        LENGTH, ALPHABETICAL, CATEGORY
     }
 }
