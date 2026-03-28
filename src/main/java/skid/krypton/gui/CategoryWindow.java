@@ -34,11 +34,11 @@ public final class CategoryWindow {
     private final Color BORDER_COLOR = new Color(70, 100, 70, 120);
     
     // Icons for each category
-    private final String COMBAT_ICON = "🗡️";
-    private final String MISC_ICON = "📦";
-    private final String DONUT_ICON = "🍩";
-    private final String RENDER_ICON = "👁️";
-    private final String CLIENT_ICON = "💎";
+    private final String COMBAT_ICON = "⚔";
+    private final String MISC_ICON = "⚙";
+    private final String DONUT_ICON = "●";
+    private final String RENDER_ICON = "◎";
+    private final String CLIENT_ICON = "◆";
 
     public CategoryWindow(final int x, final int y, final int width, final int height, final Category category, final ClickGUI parent) {
         this.moduleButtons = new ArrayList<>();
@@ -81,13 +81,11 @@ public final class CategoryWindow {
             float hoverTarget = this.isHovered(mouseX, mouseY) ? 1.0F : 0.0F;
             this.hoverAnimation = (float) MathUtil.approachValue(delta * 0.1f, this.hoverAnimation, hoverTarget);
             
-            renderShadow(context, this.x, this.y, this.width, this.height);
-            
             Color panelBg = ColorUtil.a(BG_COLOR, HOVER_GREEN, this.hoverAnimation);
             float topRadius = 10.0F;
             float bottomRadius = this.extended ? 0.0F : 10.0F;
             
-            // Main panel
+            // Main panel - no shadow
             RenderUtils.renderRoundedQuad(context.getMatrices(), panelBg, 
                 this.x, this.y, this.x + this.width, this.y + this.height, 
                 topRadius, topRadius, bottomRadius, bottomRadius, 50.0);
@@ -102,9 +100,9 @@ public final class CategoryWindow {
             
             // Calculate text position - perfectly centered
             int textX = this.x + (this.width - getTextWidth(fullText)) / 2;
-            int textY = this.y + 10;
+            int textY = this.y + 11;
             
-            // Draw text with brighter green
+            // Draw text with bright green
             drawText(context, fullText, textX, textY, ACCENT_GREEN.getRGB());
             
             // Bottom accent line
@@ -151,13 +149,6 @@ public final class CategoryWindow {
             case "render": return RENDER_ICON;
             case "client": return CLIENT_ICON;
             default: return "?";
-        }
-    }
-    
-    private void renderShadow(DrawContext context, int x, int y, int width, int height) {
-        for (int i = 1; i <= 4; i++) {
-            int alpha = 15 - i * 3;
-            context.fill(x - i, y - i, x + width + i, y + height + i, new Color(0, 0, 0, Math.max(0, alpha)).getRGB());
         }
     }
 
