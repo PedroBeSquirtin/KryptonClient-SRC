@@ -29,17 +29,17 @@ public final class CategoryWindow {
     // Clean Green Color Scheme
     private final Color BG_COLOR = new Color(18, 25, 18, 245);
     private final Color HEADER_COLOR = new Color(25, 35, 25, 255);
-    private final Color ACCENT_GREEN = new Color(70, 180, 70, 255);
-    private final Color HOVER_GREEN = new Color(70, 180, 70, 25);
+    private final Color ACCENT_GREEN = new Color(100, 220, 100, 255); // Brighter
+    private final Color HOVER_GREEN = new Color(100, 220, 100, 25);
     private final Color BORDER_COLOR = new Color(70, 100, 70, 120);
     
-    // Proper icons for categories
-    private final String COMBAT_ICON = "⚔";
+    // Proper icons for each category
+    private final String COMBAT_ICON = "🗡️";
     private final String MOVEMENT_ICON = "🏃";
     private final String PLAYER_ICON = "👤";
-    private final String RENDER_ICON = "👁";
+    private final String RENDER_ICON = "👁️";
     private final String WORLD_ICON = "🌍";
-    private final String CLIENT_ICON = "⚙";
+    private final String CLIENT_ICON = "💎";
 
     public CategoryWindow(final int x, final int y, final int width, final int height, final Category category, final ClickGUI parent) {
         this.moduleButtons = new ArrayList<>();
@@ -101,11 +101,11 @@ public final class CategoryWindow {
             String categoryName = this.category.name.toString();
             String fullText = icon + " " + categoryName;
             
-            // Calculate text position - perfectly centered in the header
+            // Calculate text position - perfectly centered
             int textX = this.x + (this.width - getTextWidth(fullText)) / 2;
             int textY = this.y + 10;
             
-            // Draw text with green color
+            // Draw text with brighter green
             drawText(context, fullText, textX, textY, ACCENT_GREEN.getRGB());
             
             // Bottom accent line
