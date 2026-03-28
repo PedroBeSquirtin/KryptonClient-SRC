@@ -33,6 +33,7 @@
     "MouseMixin",
     "ChunkOcclusionDataBuilderMixin",
     "TextVisitFactoryMixin"
+    "FullbrightMixin"
   ],
   "injectors": {
     "defaultRequire": 1
