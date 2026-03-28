@@ -259,23 +259,24 @@ public final class HUD extends Module {
         // Draw cardinal directions - facing direction (where you're looking) is TOP
         int compassDistance = size / 2 - 15;
         
-        // Forward direction (where you're looking) goes to TOP
-        int forwardX = centerX + (int)(Math.sin(rad) * compassDistance);
-        int forwardY = centerY - (int)(Math.cos(rad) * compassDistance);
-        int backwardX = centerX - (int)(Math.sin(rad) * compassDistance);
-        int backwardY = centerY + (int)(Math.cos(rad) * compassDistance);
-        int rightX = centerX + (int)(Math.cos(rad) * compassDistance);
-        int rightY = centerY + (int)(Math.sin(rad) * compassDistance);
-        int leftX = centerX - (int)(Math.cos(rad) * compassDistance);
-        int leftY = centerY - (int)(Math.sin(rad) * compassDistance);
+        // Calculate positions so that the direction you're facing goes to the TOP
+        // When you look North, N appears at top. When you look East, E appears at top.
+        int northX = centerX + (int)(Math.sin(rad) * compassDistance);
+        int northY = centerY - (int)(Math.cos(rad) * compassDistance);
+        int southX = centerX - (int)(Math.sin(rad) * compassDistance);
+        int southY = centerY + (int)(Math.cos(rad) * compassDistance);
+        int eastX = centerX + (int)(Math.cos(rad) * compassDistance);
+        int eastY = centerY + (int)(Math.sin(rad) * compassDistance);
+        int westX = centerX - (int)(Math.cos(rad) * compassDistance);
+        int westY = centerY - (int)(Math.sin(rad) * compassDistance);
         
-        // Forward direction is where you're looking (top of radar)
-        TextRenderer.drawString("N", ctx, forwardX - 4, forwardY - 5, CARDINAL_COLOR.getRGB());
-        TextRenderer.drawString("S", ctx, backwardX - 4, backwardY - 5, CARDINAL_COLOR.getRGB());
-        TextRenderer.drawString("E", ctx, rightX - 4, rightY - 5, CARDINAL_COLOR.getRGB());
-        TextRenderer.drawString("W", ctx, leftX - 4, leftY - 5, CARDINAL_COLOR.getRGB());
+        // Draw the cardinal directions
+        TextRenderer.drawString("N", ctx, northX - 4, northY - 5, CARDINAL_COLOR.getRGB());
+        TextRenderer.drawString("S", ctx, southX - 4, southY - 5, CARDINAL_COLOR.getRGB());
+        TextRenderer.drawString("E", ctx, eastX - 4, eastY - 5, CARDINAL_COLOR.getRGB());
+        TextRenderer.drawString("W", ctx, westX - 4, westY - 5, CARDINAL_COLOR.getRGB());
         
-        // Draw other players - facing direction is TOP
+        // Draw other players
         for (Entity ent : mc.world.getPlayers()) {
             if (ent == mc.player) continue;
             
@@ -289,7 +290,7 @@ public final class HUD extends Module {
             double angle = Math.atan2(dz, dx);
             double relAngle = angle - rad;
             
-            // Convert to radar coordinates: forward direction goes UP (negative Y)
+            // Convert to radar coordinates with forward direction going to TOP
             double radarX = Math.sin(relAngle) * distance;
             double radarY = -Math.cos(relAngle) * distance;
             
@@ -342,7 +343,7 @@ public final class HUD extends Module {
                             double angle = Math.atan2(dz, dx);
                             double relAngle = angle - rad;
                             
-                            // Convert to radar coordinates: forward direction goes UP (negative Y)
+                            // Convert to radar coordinates with forward direction going to TOP
                             double radarX = Math.sin(relAngle) * distance;
                             double radarY = -Math.cos(relAngle) * distance;
                             
