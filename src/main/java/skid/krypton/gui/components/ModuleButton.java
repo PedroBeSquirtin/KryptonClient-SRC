@@ -26,17 +26,19 @@ public final class ModuleButton {
     public Color currentAlpha;
     public Animation animation;
     
-    private final Color MODULE_BG = new Color(22, 30, 22, 235);
-    private final Color HOVER_BG = new Color(100, 220, 100, 20);
-    private final Color BORDER_COLOR = new Color(65, 95, 65, 120);
-    private final Color GLOW_GREEN = new Color(70, 180, 70, 60);
-    private final Color BUTTON_ON = new Color(50, 140, 50, 255);
+    // Clean Uranium Green Color Scheme
+    private final Color MODULE_BG = new Color(22, 28, 22, 235);
+    private final Color HOVER_BG = new Color(80, 200, 80, 15);
+    private final Color BORDER_COLOR = new Color(65, 95, 65, 100);
+    private final Color GLOW_GREEN = new Color(80, 200, 80, 50);
+    private final Color BUTTON_ON = new Color(80, 200, 80, 255);
     private final Color BUTTON_OFF = new Color(55, 55, 65, 200);
-    private final Color TEXT_WHITE = new Color(255, 255, 255, 255);
+    private final Color TEXT_WHITE = new Color(255, 255, 255, 245);
+    private final Color TEXT_GREEN = new Color(80, 200, 80, 255);
     
     private float hoverAnimation;
     private float enabledAnimation;
-    private static final float CORNER_RADIUS = 6.0f;
+    private static final float CORNER_RADIUS = 8.0f;
 
     public ModuleButton(final CategoryWindow parent, final Module module, final int offset) {
         this.settings = new ArrayList<>();
@@ -170,38 +172,42 @@ public final class ModuleButton {
     private void renderModuleInfo(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
         if (this.module == null) return;
         
-        // Module name - perfectly centered vertically
+        // Module name with icon indicator
         String moduleName = this.module.getName() != null ? this.module.getName().toString() : "";
         int textY = y + (height - 8) / 2;
-        drawText(drawContext, moduleName, x + 12, textY, TEXT_WHITE.getRGB());
         
-        // ON/OFF Button
-        final int buttonWidth = 42;
-        final int buttonHeight = 22;
-        final int buttonX = x + width - buttonWidth - 12;
-        final int buttonY = y + (height - buttonHeight) / 2;
+        // Draw status indicator dot
+        boolean isEnabled = this.module.isEnabled();
+        Color indicatorColor = isEnabled ? TEXT_GREEN : new Color(100, 100, 100, 200);
+        RenderUtils.renderCircle(drawContext.getMatrices(), indicatorColor, x + 8, textY + 4, 3, 12);
         
-        boolean isEnabled = this.module != null && this.module.isEnabled();
+        // Draw module name
+        Color nameColor = isEnabled ? TEXT_GREEN : TEXT_WHITE;
+        drawText(drawContext, moduleName, x + 16, textY, nameColor.getRGB());
+        
+        // Modern ON/OFF Toggle
+        final int toggleWidth = 42;
+        final int toggleHeight = 22;
+        final int toggleX = x + width - toggleWidth - 12;
+        final int toggleY = y + (height - toggleHeight) / 2;
         
         // Button background
         Color buttonBg = isEnabled ? BUTTON_ON : BUTTON_OFF;
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), buttonBg,
-            buttonX, buttonY, buttonX + buttonWidth, buttonY + buttonHeight, 11, 11, 11, 11, 30);
+            toggleX, toggleY, toggleX + toggleWidth, toggleY + toggleHeight, 11, 11, 11, 11, 30);
         
-        // Button text - perfectly centered
+        // Button text
         String buttonText = isEnabled ? "ON" : "OFF";
         int textWidth = getTextWidth(buttonText);
-        int textXPos = buttonX + (buttonWidth - textWidth) / 2;
-        int textYPos = buttonY + (buttonHeight - 8) / 2;
-        
+        int textXPos = toggleX + (toggleWidth - textWidth) / 2;
+        int textYPos = toggleY + (toggleHeight - 8) / 2;
         int textColor = isEnabled ? 0xFFFFFF : 0xAAAAAA;
         drawText(drawContext, buttonText, textXPos, textYPos, textColor);
         
+        // Glow effect for enabled modules
         if (isEnabled) {
             RenderUtils.renderRoundedQuad(drawContext.getMatrices(), GLOW_GREEN,
-                buttonX - 1, buttonY - 1, buttonX + buttonWidth + 1, buttonY + buttonHeight + 1, 12, 12, 12, 12, 30);
-            RenderUtils.renderRoundedQuad(drawContext.getMatrices(), BUTTON_ON,
-                x + 4, y + 4, x + 6, y + height - 4, 2, 2, 2, 2, 30);
+                toggleX - 1, toggleY - 1, toggleX + toggleWidth + 1, toggleY + toggleHeight + 1, 12, 12, 12, 12, 30);
         }
     }
 
@@ -298,13 +304,13 @@ public final class ModuleButton {
         if (this.parent == null || this.module == null) return;
         
         if (this.isHovered(mouseX, mouseY)) {
-            final int buttonWidth = 42;
-            final int buttonHeight = 22;
-            final int buttonX = this.parent.getX() + this.parent.getWidth() - buttonWidth - 12;
-            final int buttonY = this.parent.getY() + this.offset + (this.parent.getHeight() - buttonHeight) / 2;
+            final int toggleWidth = 42;
+            final int toggleHeight = 22;
+            final int toggleX = this.parent.getX() + this.parent.getWidth() - toggleWidth - 12;
+            final int toggleY = this.parent.getY() + this.offset + (this.parent.getHeight() - toggleHeight) / 2;
             
             if (button == 0) {
-                if (mouseX >= buttonX && mouseX <= buttonX + buttonWidth && mouseY >= buttonY && mouseY <= buttonY + buttonHeight) {
+                if (mouseX >= toggleX && mouseX <= toggleX + toggleWidth && mouseY >= toggleY && mouseY <= toggleY + toggleHeight) {
                     this.module.toggle();
                 } else if (this.module.getSettings() != null && !this.module.getSettings().isEmpty() && mouseX > this.parent.getX() + this.parent.getWidth() - 25) {
                     if (!this.extended) {
