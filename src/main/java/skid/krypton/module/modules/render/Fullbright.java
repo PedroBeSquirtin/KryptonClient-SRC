@@ -8,6 +8,7 @@ import skid.krypton.utils.EncryptedString;
 
 public final class Fullbright extends Module {
     
+    private static final double MAX_GAMMA = 16.0;
     private double originalGamma = -1.0;
     
     public Fullbright() {
@@ -23,8 +24,8 @@ public final class Fullbright extends Module {
             originalGamma = mc.options.getGamma().getValue();
         }
         
-        // Set gamma to max brightness (100.0 is very bright)
-        mc.options.getGamma().setValue(100.0);
+        // Set gamma to maximum (capped at 16.0 in 1.21.1)
+        mc.options.getGamma().setValue(MAX_GAMMA);
     }
     
     @Override
@@ -41,9 +42,9 @@ public final class Fullbright extends Module {
     public void onTick(TickEvent event) {
         if (!isEnabled()) return;
         
-        // Keep gamma at max brightness
-        if (mc.options.getGamma().getValue() != 100.0) {
-            mc.options.getGamma().setValue(100.0);
+        // Keep gamma at maximum
+        if (mc.options.getGamma().getValue() != MAX_GAMMA) {
+            mc.options.getGamma().setValue(MAX_GAMMA);
         }
     }
 }
