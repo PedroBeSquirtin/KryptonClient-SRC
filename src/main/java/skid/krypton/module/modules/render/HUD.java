@@ -244,7 +244,6 @@ public final class HUD extends Module {
         double rad = Math.toRadians(-yaw + 180);
         
         // For entity positioning, we need the angle relative to your facing direction
-        // The forward direction (where you're looking) should map to the top of the radar
         double facingRad = Math.toRadians(yaw);
         
         // Draw + crosshair with arrow head on top line
@@ -305,8 +304,15 @@ public final class HUD extends Module {
         TextRenderer.drawString("E", ctx, eastX - 4, eastY - 5, CARDINAL_COLOR.getRGB());
         TextRenderer.drawString("W", ctx, westX - 4, westY - 5, CARDINAL_COLOR.getRGB());
         
-        // Helper function to draw entities on radar
-        // Draw other players
+        // Draw direction debug text to verify facing
+        String facingText = "";
+        if (yaw >= 0 && yaw < 45 || yaw >= 315) facingText = "S";
+        else if (yaw >= 45 && yaw < 135) facingText = "W";
+        else if (yaw >= 135 && yaw < 225) facingText = "N";
+        else if (yaw >= 225 && yaw < 315) facingText = "E";
+        TextRenderer.drawString("Facing: " + facingText + " (" + (int)yaw + "°)", ctx, x + 5, y + size + 5, TEXT_GRAY.getRGB());
+        
+        // Draw other players using correct coordinate system
         for (Entity ent : mc.world.getPlayers()) {
             if (ent == mc.player) continue;
             
@@ -321,8 +327,7 @@ public final class HUD extends Module {
             // Calculate angle relative to facing direction
             double relativeAngle = angleToEntity - facingRad;
             
-            // Convert to radar coordinates: forward direction goes to the top
-            // Since forward is where you're looking, it should be negative Y in radar space
+            // Convert to radar coordinates: forward direction (where you're looking) goes to the top
             double radarX = Math.sin(relativeAngle) * distance;
             double radarY = -Math.cos(relativeAngle) * distance;
             
@@ -392,6 +397,14 @@ public final class HUD extends Module {
                                     // Draw the first letter of the block type
                                     String firstLetter = getBlockEntityIcon(blockEntity);
                                     TextRenderer.drawString(firstLetter, ctx, px - 3, py - 4, TEXT_WHITE.getRGB());
+                                    
+                                    // Draw small indicator for distance/direction
+                                    String relDir = "";
+                                    if (relativeAngle > -Math.PI/4 && relativeAngle <= Math.PI/4) relDir = "→";
+                                    else if (relativeAngle > Math.PI/4 && relativeAngle <= 3*Math.PI/4) relDir = "↑";
+                                    else if (relativeAngle > 3*Math.PI/4 || relativeAngle <= -3*Math.PI/4) relDir = "←";
+                                    else relDir = "↓";
+                                    TextRenderer.drawString(relDir, ctx, px + 4, py - 4, TEXT_GRAY.getRGB());
                                 }
                             }
                         }
