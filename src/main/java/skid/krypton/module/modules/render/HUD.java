@@ -222,7 +222,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - Center is player, facing direction is TOP of radar (FIXED)
+    // RADAR - Center is player, facing direction is TOP of radar with arrow head
     private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
         int range = (int) radarRange.getValue();
@@ -236,33 +236,58 @@ public final class HUD extends Module {
         int centerX = x + size / 2;
         int centerY = y + size / 2;
         
-        // Get player's facing direction (yaw in degrees, 0 = South, 90 = West, 180 = North, 270 = East)
+        // Get player's facing direction (yaw in degrees)
         float yaw = mc.player.getYaw();
-        // Adjust so 0 = North (the top of the radar)
-        float adjustedYaw = yaw + 180;
-        double rad = Math.toRadians(adjustedYaw);
+        // Convert to radians - we want the direction you're facing to be at the TOP
+        double rad = Math.toRadians(yaw);
         
-        // Draw + crosshair - centered on player
-        int armLength = size / 2 - 6;
+        // Draw + crosshair with arrow head on top line
+        int armLength = size / 2 - 8;
+        int arrowSize = 8;
         
-        // Draw thin horizontal line (left-right)
-        for (int i = -armLength; i <= armLength; i++) {
-            ctx.fill(centerX + i, centerY, centerX + i + 1, centerY + 1, CROSSHAIR_COLOR.getRGB());
+        // Draw the top line of the + (with arrow head at the end)
+        for (int i = 0; i <= armLength; i++) {
+            int px = centerX;
+            int py = centerY - i;
+            ctx.fill(px, py, px + 1, py + 1, CROSSHAIR_COLOR.getRGB());
         }
         
-        // Draw thin vertical line (up-down)
-        for (int i = -armLength; i <= armLength; i++) {
-            ctx.fill(centerX, centerY + i, centerX + 1, centerY + i + 1, CROSSHAIR_COLOR.getRGB());
+        // Draw arrow head at the top
+        int arrowTipX = centerX;
+        int arrowTipY = centerY - armLength;
+        ctx.fill(arrowTipX - 2, arrowTipY, arrowTipX + 3, arrowTipY + 1, CROSSHAIR_COLOR.getRGB());
+        ctx.fill(arrowTipX - 1, arrowTipY - 1, arrowTipX + 2, arrowTipY + 2, CROSSHAIR_COLOR.getRGB());
+        ctx.fill(arrowTipX, arrowTipY - 2, arrowTipX + 1, arrowTipY + 3, CROSSHAIR_COLOR.getRGB());
+        
+        // Draw bottom line
+        for (int i = 0; i <= armLength; i++) {
+            int px = centerX;
+            int py = centerY + i;
+            ctx.fill(px, py, px + 1, py + 1, CROSSHAIR_COLOR.getRGB());
+        }
+        
+        // Draw left line
+        for (int i = 0; i <= armLength; i++) {
+            int px = centerX - i;
+            int py = centerY;
+            ctx.fill(px, py, px + 1, py + 1, CROSSHAIR_COLOR.getRGB());
+        }
+        
+        // Draw right line
+        for (int i = 0; i <= armLength; i++) {
+            int px = centerX + i;
+            int py = centerY;
+            ctx.fill(px, py, px + 1, py + 1, CROSSHAIR_COLOR.getRGB());
         }
         
         // Draw center dot (player)
         ctx.fill(centerX - 1, centerY - 1, centerX + 1, centerY + 1, URANIUM_GREEN.getRGB());
         
-        // Draw cardinal directions - FIXED: The direction you're facing goes to the TOP
+        // Draw cardinal directions - rotating based on player facing
         int compassDistance = size / 2 - 15;
         
-        // Calculate positions for cardinal directions
-        // Using adjusted yaw so North is at the top
+        // Calculate positions for cardinal directions (rotate based on yaw)
+        // So the direction you're facing goes to the TOP
         int northX = centerX + (int)(Math.sin(rad) * compassDistance);
         int northY = centerY - (int)(Math.cos(rad) * compassDistance);
         int southX = centerX - (int)(Math.sin(rad) * compassDistance);
@@ -290,8 +315,7 @@ public final class HUD extends Module {
             
             // Calculate angle relative to your facing direction
             double angle = Math.atan2(dz, dx);
-            // Adjust for the yaw offset
-            double relAngle = angle - Math.toRadians(adjustedYaw);
+            double relAngle = angle - rad;
             
             // Convert to radar coordinates with forward direction going to TOP
             double radarX = Math.sin(relAngle) * distance;
@@ -344,7 +368,7 @@ public final class HUD extends Module {
                             
                             // Calculate angle relative to your facing direction
                             double angle = Math.atan2(dz, dx);
-                            double relAngle = angle - Math.toRadians(adjustedYaw);
+                            double relAngle = angle - rad;
                             
                             // Convert to radar coordinates with forward direction going to TOP
                             double radarX = Math.sin(relAngle) * distance;
