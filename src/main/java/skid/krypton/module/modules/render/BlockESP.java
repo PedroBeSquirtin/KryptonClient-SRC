@@ -14,7 +14,6 @@ import skid.krypton.event.events.Render3DEvent;
 import skid.krypton.module.Category;
 import skid.krypton.module.Module;
 import skid.krypton.module.setting.BooleanSetting;
-import skid.krypton.module.setting.ColorSetting;
 import skid.krypton.module.setting.ModeSetting;
 import skid.krypton.module.setting.NumberSetting;
 import skid.krypton.utils.BlockUtil;
@@ -22,44 +21,77 @@ import skid.krypton.utils.EncryptedString;
 import skid.krypton.utils.RenderUtils;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class BlockESP extends Module {
     
-    // General Settings
-    private final NumberSetting alpha = new NumberSetting(EncryptedString.of("Alpha"), 50, 255, 150, 1);
-    private final BooleanSetting tracers = new BooleanSetting(EncryptedString.of("Tracers"), false).setDescription(EncryptedString.of("Draws a line from player to blocks"));
-    private final BooleanSetting outline = new BooleanSetting(EncryptedString.of("Outline"), true).setDescription(EncryptedString.of("Draws outline around blocks"));
+    // ========== GENERAL SETTINGS ==========
+    private final NumberSetting alpha = new NumberSetting(EncryptedString.of("Alpha"), 1, 255, 150, 1);
+    private final BooleanSetting tracers = new BooleanSetting(EncryptedString.of("Tracers"), false);
+    private final BooleanSetting outline = new BooleanSetting(EncryptedString.of("Outline"), true);
+    private final BooleanSetting filledBox = new BooleanSetting(EncryptedString.of("Filled Box"), true);
     
-    // Block Selection Mode
-    private final ModeSetting selectionMode = new ModeSetting(EncryptedString.of("Selection Mode"), "All Blocks", new String[]{"All Blocks", "Selected Blocks", "Whitelist", "Blacklist"});
+    // ========== BLOCK SELECTION MODES ==========
+    private final ModeSetting selectionMode = new ModeSetting(EncryptedString.of("Selection Mode"), "All Blocks", 
+            new String[]{"All Blocks", "Ores", "Storage", "Utility", "Redstone", "Custom List"});
     
-    // Custom Block Selection (using block IDs)
-    private final ModeSetting block1 = new ModeSetting(EncryptedString.of("Block 1"), "None", getBlockList());
-    private final ModeSetting block2 = new ModeSetting(EncryptedString.of("Block 2"), "None", getBlockList());
-    private final ModeSetting block3 = new ModeSetting(EncryptedString.of("Block 3"), "None", getBlockList());
-    private final ModeSetting block4 = new ModeSetting(EncryptedString.of("Block 4"), "None", getBlockList());
-    private final ModeSetting block5 = new ModeSetting(EncryptedString.of("Block 5"), "None", getBlockList());
-    private final ModeSetting block6 = new ModeSetting(EncryptedString.of("Block 6"), "None", getBlockList());
+    // ========== CUSTOM BLOCK SELECTION (up to 10 custom blocks) ==========
+    private final ModeSetting customBlock1 = new ModeSetting(EncryptedString.of("Custom Block 1"), "None", getAllBlockNames());
+    private final ModeSetting customBlock2 = new ModeSetting(EncryptedString.of("Custom Block 2"), "None", getAllBlockNames());
+    private final ModeSetting customBlock3 = new ModeSetting(EncryptedString.of("Custom Block 3"), "None", getAllBlockNames());
+    private final ModeSetting customBlock4 = new ModeSetting(EncryptedString.of("Custom Block 4"), "None", getAllBlockNames());
+    private final ModeSetting customBlock5 = new ModeSetting(EncryptedString.of("Custom Block 5"), "None", getAllBlockNames());
+    private final ModeSetting customBlock6 = new ModeSetting(EncryptedString.of("Custom Block 6"), "None", getAllBlockNames());
+    private final ModeSetting customBlock7 = new ModeSetting(EncryptedString.of("Custom Block 7"), "None", getAllBlockNames());
+    private final ModeSetting customBlock8 = new ModeSetting(EncryptedString.of("Custom Block 8"), "None", getAllBlockNames());
+    private final ModeSetting customBlock9 = new ModeSetting(EncryptedString.of("Custom Block 9"), "None", getAllBlockNames());
+    private final ModeSetting customBlock10 = new ModeSetting(EncryptedString.of("Custom Block 10"), "None", getAllBlockNames());
     
-    // Colors for custom blocks
-    private final ColorSetting color1 = new ColorSetting(EncryptedString.of("Color 1"), new Color(255, 0, 0, 150));
-    private final ColorSetting color2 = new ColorSetting(EncryptedString.of("Color 2"), new Color(0, 255, 0, 150));
-    private final ColorSetting color3 = new ColorSetting(EncryptedString.of("Color 3"), new Color(0, 0, 255, 150));
-    private final ColorSetting color4 = new ColorSetting(EncryptedString.of("Color 4"), new Color(255, 255, 0, 150));
-    private final ColorSetting color5 = new ColorSetting(EncryptedString.of("Color 5"), new Color(255, 0, 255, 150));
-    private final ColorSetting color6 = new ColorSetting(EncryptedString.of("Color 6"), new Color(0, 255, 255, 150));
+    // ========== CUSTOM BLOCK COLORS (RGB for each) ==========
+    private final NumberSetting block1Red = new NumberSetting(EncryptedString.of("Block 1 Red"), 0, 255, 255, 1);
+    private final NumberSetting block1Green = new NumberSetting(EncryptedString.of("Block 1 Green"), 0, 255, 0, 1);
+    private final NumberSetting block1Blue = new NumberSetting(EncryptedString.of("Block 1 Blue"), 0, 255, 0, 1);
     
-    // Block Categories
-    private final BooleanSetting ores = new BooleanSetting(EncryptedString.of("Ores"), true);
-    private final BooleanSetting storage = new BooleanSetting(EncryptedString.of("Storage Blocks"), true);
-    private final BooleanSetting utility = new BooleanSetting(EncryptedString.of("Utility Blocks"), true);
-    private final BooleanSetting redstone = new BooleanSetting(EncryptedString.of("Redstone"), true);
-    private final BooleanSetting plants = new BooleanSetting(EncryptedString.of("Plants"), false);
-    private final BooleanSetting liquids = new BooleanSetting(EncryptedString.of("Liquids"), false);
+    private final NumberSetting block2Red = new NumberSetting(EncryptedString.of("Block 2 Red"), 0, 255, 0, 1);
+    private final NumberSetting block2Green = new NumberSetting(EncryptedString.of("Block 2 Green"), 0, 255, 255, 1);
+    private final NumberSetting block2Blue = new NumberSetting(EncryptedString.of("Block 2 Blue"), 0, 255, 0, 1);
     
-    // Individual Ore Toggles
+    private final NumberSetting block3Red = new NumberSetting(EncryptedString.of("Block 3 Red"), 0, 255, 0, 1);
+    private final NumberSetting block3Green = new NumberSetting(EncryptedString.of("Block 3 Green"), 0, 255, 0, 1);
+    private final NumberSetting block3Blue = new NumberSetting(EncryptedString.of("Block 3 Blue"), 0, 255, 255, 1);
+    
+    private final NumberSetting block4Red = new NumberSetting(EncryptedString.of("Block 4 Red"), 0, 255, 255, 1);
+    private final NumberSetting block4Green = new NumberSetting(EncryptedString.of("Block 4 Green"), 0, 255, 255, 1);
+    private final NumberSetting block4Blue = new NumberSetting(EncryptedString.of("Block 4 Blue"), 0, 255, 0, 1);
+    
+    private final NumberSetting block5Red = new NumberSetting(EncryptedString.of("Block 5 Red"), 0, 255, 255, 1);
+    private final NumberSetting block5Green = new NumberSetting(EncryptedString.of("Block 5 Green"), 0, 255, 0, 1);
+    private final NumberSetting block5Blue = new NumberSetting(EncryptedString.of("Block 5 Blue"), 0, 255, 255, 1);
+    
+    private final NumberSetting block6Red = new NumberSetting(EncryptedString.of("Block 6 Red"), 0, 255, 255, 1);
+    private final NumberSetting block6Green = new NumberSetting(EncryptedString.of("Block 6 Green"), 0, 255, 255, 1);
+    private final NumberSetting block6Blue = new NumberSetting(EncryptedString.of("Block 6 Blue"), 0, 255, 255, 1);
+    
+    private final NumberSetting block7Red = new NumberSetting(EncryptedString.of("Block 7 Red"), 0, 255, 255, 1);
+    private final NumberSetting block7Green = new NumberSetting(EncryptedString.of("Block 7 Green"), 0, 255, 0, 1);
+    private final NumberSetting block7Blue = new NumberSetting(EncryptedString.of("Block 7 Blue"), 0, 255, 255, 1);
+    
+    private final NumberSetting block8Red = new NumberSetting(EncryptedString.of("Block 8 Red"), 0, 255, 255, 1);
+    private final NumberSetting block8Green = new NumberSetting(EncryptedString.of("Block 8 Green"), 0, 255, 255, 1);
+    private final NumberSetting block8Blue = new NumberSetting(EncryptedString.of("Block 8 Blue"), 0, 255, 0, 1);
+    
+    private final NumberSetting block9Red = new NumberSetting(EncryptedString.of("Block 9 Red"), 0, 255, 255, 1);
+    private final NumberSetting block9Green = new NumberSetting(EncryptedString.of("Block 9 Green"), 0, 255, 0, 1);
+    private final NumberSetting block9Blue = new NumberSetting(EncryptedString.of("Block 9 Blue"), 0, 255, 255, 1);
+    
+    private final NumberSetting block10Red = new NumberSetting(EncryptedString.of("Block 10 Red"), 0, 255, 255, 1);
+    private final NumberSetting block10Green = new NumberSetting(EncryptedString.of("Block 10 Green"), 0, 255, 255, 1);
+    private final NumberSetting block10Blue = new NumberSetting(EncryptedString.of("Block 10 Blue"), 0, 255, 0, 1);
+    
+    // ========== ORE SETTINGS ==========
     private final BooleanSetting diamondOre = new BooleanSetting(EncryptedString.of("Diamond Ore"), true);
     private final BooleanSetting goldOre = new BooleanSetting(EncryptedString.of("Gold Ore"), true);
     private final BooleanSetting ironOre = new BooleanSetting(EncryptedString.of("Iron Ore"), true);
@@ -70,225 +102,223 @@ public final class BlockESP extends Module {
     private final BooleanSetting netherQuartzOre = new BooleanSetting(EncryptedString.of("Nether Quartz Ore"), true);
     private final BooleanSetting ancientDebris = new BooleanSetting(EncryptedString.of("Ancient Debris"), true);
     private final BooleanSetting netherGoldOre = new BooleanSetting(EncryptedString.of("Nether Gold Ore"), true);
+    private final BooleanSetting copperOre = new BooleanSetting(EncryptedString.of("Copper Ore"), true);
     
-    // Storage Colors
-    private final ColorSetting chestColor = new ColorSetting(EncryptedString.of("Chest Color"), new Color(200, 100, 0, 150));
-    private final ColorSetting enderChestColor = new ColorSetting(EncryptedString.of("Ender Chest Color"), new Color(100, 0, 200, 150));
-    private final ColorSetting shulkerColor = new ColorSetting(EncryptedString.of("Shulker Color"), new Color(150, 0, 200, 150));
-    private final ColorSetting barrelColor = new ColorSetting(EncryptedString.of("Barrel Color"), new Color(255, 100, 100, 150));
+    // ========== STORAGE SETTINGS ==========
+    private final BooleanSetting chests = new BooleanSetting(EncryptedString.of("Chests"), true);
+    private final BooleanSetting trappedChests = new BooleanSetting(EncryptedString.of("Trapped Chests"), true);
+    private final BooleanSetting enderChests = new BooleanSetting(EncryptedString.of("Ender Chests"), true);
+    private final BooleanSetting shulkerBoxes = new BooleanSetting(EncryptedString.of("Shulker Boxes"), true);
+    private final BooleanSetting barrels = new BooleanSetting(EncryptedString.of("Barrels"), true);
     
-    // Utility Colors
-    private final ColorSetting furnaceColor = new ColorSetting(EncryptedString.of("Furnace Color"), new Color(100, 100, 100, 150));
-    private final ColorSetting spawnerColor = new ColorSetting(EncryptedString.of("Spawner Color"), new Color(150, 100, 200, 150));
-    private final ColorSetting enchantColor = new ColorSetting(EncryptedString.of("Enchant Table Color"), new Color(100, 100, 255, 150));
-    private final ColorSetting beaconColor = new ColorSetting(EncryptedString.of("Beacon Color"), new Color(0, 200, 200, 150));
-    private final ColorSetting anvilColor = new ColorSetting(EncryptedString.of("Anvil Color"), new Color(150, 150, 150, 150));
+    // ========== UTILITY SETTINGS ==========
+    private final BooleanSetting furnaces = new BooleanSetting(EncryptedString.of("Furnaces"), true);
+    private final BooleanSetting blastFurnaces = new BooleanSetting(EncryptedString.of("Blast Furnaces"), true);
+    private final BooleanSetting smokers = new BooleanSetting(EncryptedString.of("Smokers"), true);
+    private final BooleanSetting spawners = new BooleanSetting(EncryptedString.of("Spawners"), true);
+    private final BooleanSetting enchantTables = new BooleanSetting(EncryptedString.of("Enchanting Tables"), true);
+    private final BooleanSetting beacons = new BooleanSetting(EncryptedString.of("Beacons"), true);
+    private final BooleanSetting anvils = new BooleanSetting(EncryptedString.of("Anvils"), true);
     
-    // Redstone Colors
-    private final ColorSetting pistonColor = new ColorSetting(EncryptedString.of("Piston Color"), new Color(100, 200, 100, 150));
-    private final ColorSetting dropperColor = new ColorSetting(EncryptedString.of("Dropper Color"), new Color(150, 150, 150, 150));
-    private final ColorSetting dispenserColor = new ColorSetting(EncryptedString.of("Dispenser Color"), new Color(150, 150, 150, 150));
-    private final ColorSetting observerColor = new ColorSetting(EncryptedString.of("Observer Color"), new Color(200, 200, 100, 150));
+    // ========== REDSTONE SETTINGS ==========
+    private final BooleanSetting pistons = new BooleanSetting(EncryptedString.of("Pistons"), true);
+    private final BooleanSetting stickyPistons = new BooleanSetting(EncryptedString.of("Sticky Pistons"), true);
+    private final BooleanSetting droppers = new BooleanSetting(EncryptedString.of("Droppers"), true);
+    private final BooleanSetting dispensers = new BooleanSetting(EncryptedString.of("Dispensers"), true);
+    private final BooleanSetting observers = new BooleanSetting(EncryptedString.of("Observers"), true);
+    private final BooleanSetting hoppers = new BooleanSetting(EncryptedString.of("Hoppers"), true);
     
     // Map to store custom block colors
-    private final Map<Block, Color> customBlockColors = new HashMap<>();
+    private final Map<String, Color> customBlockColorMap = new HashMap<>();
     
     public BlockESP() {
-        super(EncryptedString.of("Block ESP"), EncryptedString.of("Highlights blocks of your choice"), -1, Category.RENDER);
+        super(EncryptedString.of("Block ESP"), EncryptedString.of("Highlights any blocks with custom colors"), -1, Category.RENDER);
         
         // General Settings
-        this.addSettings(this.alpha, this.tracers, this.outline, this.selectionMode);
+        this.addSettings(this.alpha, this.tracers, this.outline, this.filledBox, this.selectionMode);
         
         // Custom Block Selection
-        this.addSettings(this.block1, this.block2, this.block3, this.block4, this.block5, this.block6);
-        this.addSettings(this.color1, this.color2, this.color3, this.color4, this.color5, this.color6);
+        this.addSettings(this.customBlock1, this.customBlock2, this.customBlock3, this.customBlock4, this.customBlock5,
+                        this.customBlock6, this.customBlock7, this.customBlock8, this.customBlock9, this.customBlock10);
         
-        // Block Categories
-        this.addSettings(this.ores, this.storage, this.utility, this.redstone, this.plants, this.liquids);
+        // Custom Block Colors
+        this.addSettings(this.block1Red, this.block1Green, this.block1Blue);
+        this.addSettings(this.block2Red, this.block2Green, this.block2Blue);
+        this.addSettings(this.block3Red, this.block3Green, this.block3Blue);
+        this.addSettings(this.block4Red, this.block4Green, this.block4Blue);
+        this.addSettings(this.block5Red, this.block5Green, this.block5Blue);
+        this.addSettings(this.block6Red, this.block6Green, this.block6Blue);
+        this.addSettings(this.block7Red, this.block7Green, this.block7Blue);
+        this.addSettings(this.block8Red, this.block8Green, this.block8Blue);
+        this.addSettings(this.block9Red, this.block9Green, this.block9Blue);
+        this.addSettings(this.block10Red, this.block10Green, this.block10Blue);
         
-        // Individual Ores
-        this.addSettings(this.diamondOre, this.goldOre, this.ironOre, this.coalOre, this.emeraldOre, 
-                        this.lapisOre, this.redstoneOre, this.netherQuartzOre, this.ancientDebris, this.netherGoldOre);
+        // Ores
+        this.addSettings(this.diamondOre, this.goldOre, this.ironOre, this.coalOre, this.emeraldOre,
+                        this.lapisOre, this.redstoneOre, this.netherQuartzOre, this.ancientDebris, 
+                        this.netherGoldOre, this.copperOre);
         
         // Storage
-        this.addSettings(this.chestColor, this.enderChestColor, this.shulkerColor, this.barrelColor);
+        this.addSettings(this.chests, this.trappedChests, this.enderChests, this.shulkerBoxes, this.barrels);
         
         // Utility
-        this.addSettings(this.furnaceColor, this.spawnerColor, this.enchantColor, this.beaconColor, this.anvilColor);
+        this.addSettings(this.furnaces, this.blastFurnaces, this.smokers, this.spawners, this.enchantTables, 
+                        this.beacons, this.anvils);
         
         // Redstone
-        this.addSettings(this.pistonColor, this.dropperColor, this.dispenserColor, this.observerColor);
+        this.addSettings(this.pistons, this.stickyPistons, this.droppers, this.dispensers, this.observers, this.hoppers);
         
-        initCustomBlockColors();
+        initCustomColors();
     }
     
-    private String[] getBlockList() {
+    private void initCustomColors() {
+        customBlockColorMap.put("Diamond Ore", new Color(100, 200, 255, alpha.getIntValue()));
+        customBlockColorMap.put("Gold Ore", new Color(255, 200, 0, alpha.getIntValue()));
+        customBlockColorMap.put("Iron Ore", new Color(200, 200, 200, alpha.getIntValue()));
+        customBlockColorMap.put("Coal Ore", new Color(50, 50, 50, alpha.getIntValue()));
+        customBlockColorMap.put("Emerald Ore", new Color(0, 255, 0, alpha.getIntValue()));
+        customBlockColorMap.put("Lapis Ore", new Color(0, 0, 255, alpha.getIntValue()));
+        customBlockColorMap.put("Redstone Ore", new Color(255, 0, 0, alpha.getIntValue()));
+        customBlockColorMap.put("Nether Quartz Ore", new Color(255, 255, 255, alpha.getIntValue()));
+        customBlockColorMap.put("Ancient Debris", new Color(100, 50, 0, alpha.getIntValue()));
+        customBlockColorMap.put("Nether Gold Ore", new Color(255, 150, 0, alpha.getIntValue()));
+        customBlockColorMap.put("Copper Ore", new Color(200, 100, 50, alpha.getIntValue()));
+    }
+    
+    private String[] getAllBlockNames() {
         return new String[]{
-            "None", "Diamond Ore", "Gold Ore", "Iron Ore", "Coal Ore", "Emerald Ore", 
-            "Lapis Ore", "Redstone Ore", "Nether Quartz Ore", "Ancient Debris", "Nether Gold Ore",
-            "Chest", "Ender Chest", "Shulker Box", "Barrel", "Furnace", "Blast Furnace", 
+            "None", "Diamond Ore", "Gold Ore", "Iron Ore", "Coal Ore", "Emerald Ore", "Lapis Ore", 
+            "Redstone Ore", "Nether Quartz Ore", "Ancient Debris", "Nether Gold Ore", "Copper Ore",
+            "Chest", "Trapped Chest", "Ender Chest", "Shulker Box", "Barrel", "Furnace", "Blast Furnace", 
             "Smoker", "Spawner", "Enchanting Table", "Beacon", "Anvil", "Piston", "Sticky Piston",
-            "Dropper", "Dispenser", "Observer", "Hopper", "Note Block", "Jukebox", "Brewing Stand",
-            "Cauldron", "Flower Pot", "Beehive", "Bee Nest", "Composter", "Loom", "Grindstone",
-            "Stonecutter", "Cartography Table", "Smithing Table", "Lectern", "Bell", "Conduit"
+            "Dropper", "Dispenser", "Observer", "Hopper"
         };
-    }
-    
-    private void initCustomBlockColors() {
-        customBlockColors.put(Blocks.DIAMOND_ORE, new Color(100, 200, 255, 150));
-        customBlockColors.put(Blocks.GOLD_ORE, new Color(255, 200, 0, 150));
-        customBlockColors.put(Blocks.IRON_ORE, new Color(200, 200, 200, 150));
-        customBlockColors.put(Blocks.COAL_ORE, new Color(50, 50, 50, 150));
-        customBlockColors.put(Blocks.EMERALD_ORE, new Color(0, 255, 0, 150));
-        customBlockColors.put(Blocks.LAPIS_ORE, new Color(0, 0, 255, 150));
-        customBlockColors.put(Blocks.REDSTONE_ORE, new Color(255, 0, 0, 150));
-        customBlockColors.put(Blocks.NETHER_QUARTZ_ORE, new Color(255, 255, 255, 150));
-        customBlockColors.put(Blocks.ANCIENT_DEBRIS, new Color(100, 50, 0, 150));
-        customBlockColors.put(Blocks.NETHER_GOLD_ORE, new Color(255, 150, 0, 150));
     }
     
     private Block getBlockFromName(String name) {
         if (name.equals("None")) return null;
         
-        try {
-            switch (name) {
-                case "Diamond Ore": return Blocks.DIAMOND_ORE;
-                case "Gold Ore": return Blocks.GOLD_ORE;
-                case "Iron Ore": return Blocks.IRON_ORE;
-                case "Coal Ore": return Blocks.COAL_ORE;
-                case "Emerald Ore": return Blocks.EMERALD_ORE;
-                case "Lapis Ore": return Blocks.LAPIS_ORE;
-                case "Redstone Ore": return Blocks.REDSTONE_ORE;
-                case "Nether Quartz Ore": return Blocks.NETHER_QUARTZ_ORE;
-                case "Ancient Debris": return Blocks.ANCIENT_DEBRIS;
-                case "Nether Gold Ore": return Blocks.NETHER_GOLD_ORE;
-                case "Chest": return Blocks.CHEST;
-                case "Ender Chest": return Blocks.ENDER_CHEST;
-                case "Shulker Box": return Blocks.SHULKER_BOX;
-                case "Barrel": return Blocks.BARREL;
-                case "Furnace": return Blocks.FURNACE;
-                case "Blast Furnace": return Blocks.BLAST_FURNACE;
-                case "Smoker": return Blocks.SMOKER;
-                case "Spawner": return Blocks.SPAWNER;
-                case "Enchanting Table": return Blocks.ENCHANTING_TABLE;
-                case "Beacon": return Blocks.BEACON;
-                case "Anvil": return Blocks.ANVIL;
-                case "Piston": return Blocks.PISTON;
-                case "Sticky Piston": return Blocks.STICKY_PISTON;
-                case "Dropper": return Blocks.DROPPER;
-                case "Dispenser": return Blocks.DISPENSER;
-                case "Observer": return Blocks.OBSERVER;
-                case "Hopper": return Blocks.HOPPER;
-                case "Note Block": return Blocks.NOTE_BLOCK;
-                case "Jukebox": return Blocks.JUKEBOX;
-                case "Brewing Stand": return Blocks.BREWING_STAND;
-                case "Cauldron": return Blocks.CAULDRON;
-                case "Flower Pot": return Blocks.FLOWER_POT;
-                case "Beehive": return Blocks.BEEHIVE;
-                case "Bee Nest": return Blocks.BEE_NEST;
-                case "Composter": return Blocks.COMPOSTER;
-                case "Loom": return Blocks.LOOM;
-                case "Grindstone": return Blocks.GRINDSTONE;
-                case "Stonecutter": return Blocks.STONECUTTER;
-                case "Cartography Table": return Blocks.CARTOGRAPHY_TABLE;
-                case "Smithing Table": return Blocks.SMITHING_TABLE;
-                case "Lectern": return Blocks.LECTERN;
-                case "Bell": return Blocks.BELL;
-                case "Conduit": return Blocks.CONDUIT;
-                default: return null;
-            }
-        } catch (Exception e) {
-            return null;
+        switch (name) {
+            case "Diamond Ore": return Blocks.DIAMOND_ORE;
+            case "Gold Ore": return Blocks.GOLD_ORE;
+            case "Iron Ore": return Blocks.IRON_ORE;
+            case "Coal Ore": return Blocks.COAL_ORE;
+            case "Emerald Ore": return Blocks.EMERALD_ORE;
+            case "Lapis Ore": return Blocks.LAPIS_ORE;
+            case "Redstone Ore": return Blocks.REDSTONE_ORE;
+            case "Nether Quartz Ore": return Blocks.NETHER_QUARTZ_ORE;
+            case "Ancient Debris": return Blocks.ANCIENT_DEBRIS;
+            case "Nether Gold Ore": return Blocks.NETHER_GOLD_ORE;
+            case "Copper Ore": return Blocks.COPPER_ORE;
+            case "Chest": return Blocks.CHEST;
+            case "Trapped Chest": return Blocks.TRAPPED_CHEST;
+            case "Ender Chest": return Blocks.ENDER_CHEST;
+            case "Shulker Box": return Blocks.SHULKER_BOX;
+            case "Barrel": return Blocks.BARREL;
+            case "Furnace": return Blocks.FURNACE;
+            case "Blast Furnace": return Blocks.BLAST_FURNACE;
+            case "Smoker": return Blocks.SMOKER;
+            case "Spawner": return Blocks.SPAWNER;
+            case "Enchanting Table": return Blocks.ENCHANTING_TABLE;
+            case "Beacon": return Blocks.BEACON;
+            case "Anvil": return Blocks.ANVIL;
+            case "Piston": return Blocks.PISTON;
+            case "Sticky Piston": return Blocks.STICKY_PISTON;
+            case "Dropper": return Blocks.DROPPER;
+            case "Dispenser": return Blocks.DISPENSER;
+            case "Observer": return Blocks.OBSERVER;
+            case "Hopper": return Blocks.HOPPER;
+            default: return null;
         }
     }
     
     private Color getBlockColor(Block block, BlockPos pos) {
         BlockEntity blockEntity = mc.world.getBlockEntity(pos);
         
-        // Check custom selected blocks first
-        if (selectionMode.getValue().equals("Selected Blocks")) {
-            Block selected1 = getBlockFromName(block1.getValue());
-            Block selected2 = getBlockFromName(block2.getValue());
-            Block selected3 = getBlockFromName(block3.getValue());
-            Block selected4 = getBlockFromName(block4.getValue());
-            Block selected5 = getBlockFromName(block5.getValue());
-            Block selected6 = getBlockFromName(block6.getValue());
+        // Custom Block List Mode
+        if (selectionMode.getValue().equals("Custom List")) {
+            Block[] customBlocks = {
+                getBlockFromName(customBlock1.getValue()), getBlockFromName(customBlock2.getValue()),
+                getBlockFromName(customBlock3.getValue()), getBlockFromName(customBlock4.getValue()),
+                getBlockFromName(customBlock5.getValue()), getBlockFromName(customBlock6.getValue()),
+                getBlockFromName(customBlock7.getValue()), getBlockFromName(customBlock8.getValue()),
+                getBlockFromName(customBlock9.getValue()), getBlockFromName(customBlock10.getValue())
+            };
             
-            if (block == selected1) return color1.getColor();
-            if (block == selected2) return color2.getColor();
-            if (block == selected3) return color3.getColor();
-            if (block == selected4) return color4.getColor();
-            if (block == selected5) return color5.getColor();
-            if (block == selected6) return color6.getColor();
+            Color[] customColors = {
+                new Color(block1Red.getIntValue(), block1Green.getIntValue(), block1Blue.getIntValue(), alpha.getIntValue()),
+                new Color(block2Red.getIntValue(), block2Green.getIntValue(), block2Blue.getIntValue(), alpha.getIntValue()),
+                new Color(block3Red.getIntValue(), block3Green.getIntValue(), block3Blue.getIntValue(), alpha.getIntValue()),
+                new Color(block4Red.getIntValue(), block4Green.getIntValue(), block4Blue.getIntValue(), alpha.getIntValue()),
+                new Color(block5Red.getIntValue(), block5Green.getIntValue(), block5Blue.getIntValue(), alpha.getIntValue()),
+                new Color(block6Red.getIntValue(), block6Green.getIntValue(), block6Blue.getIntValue(), alpha.getIntValue()),
+                new Color(block7Red.getIntValue(), block7Green.getIntValue(), block7Blue.getIntValue(), alpha.getIntValue()),
+                new Color(block8Red.getIntValue(), block8Green.getIntValue(), block8Blue.getIntValue(), alpha.getIntValue()),
+                new Color(block9Red.getIntValue(), block9Green.getIntValue(), block9Blue.getIntValue(), alpha.getIntValue()),
+                new Color(block10Red.getIntValue(), block10Green.getIntValue(), block10Blue.getIntValue(), alpha.getIntValue())
+            };
+            
+            for (int i = 0; i < customBlocks.length; i++) {
+                if (customBlocks[i] != null && block == customBlocks[i]) {
+                    return customColors[i];
+                }
+            }
             return null;
         }
         
-        // Check block entities
-        if (blockEntity != null) {
-            if (blockEntity instanceof ChestBlockEntity && !(blockEntity instanceof TrappedChestBlockEntity)) return chestColor.getColor();
-            if (blockEntity instanceof TrappedChestBlockEntity) return chestColor.getColor();
-            if (blockEntity instanceof EnderChestBlockEntity) return enderChestColor.getColor();
-            if (blockEntity instanceof ShulkerBoxBlockEntity) return shulkerColor.getColor();
-            if (blockEntity instanceof BarrelBlockEntity) return barrelColor.getColor();
-            if (blockEntity instanceof FurnaceBlockEntity) return furnaceColor.getColor();
-            if (blockEntity instanceof MobSpawnerBlockEntity) return spawnerColor.getColor();
-            if (blockEntity instanceof EnchantingTableBlockEntity) return enchantColor.getColor();
-            if (blockEntity instanceof BeaconBlockEntity) return beaconColor.getColor();
+        // Ores Mode
+        if (selectionMode.getValue().equals("Ores")) {
+            if (block == Blocks.DIAMOND_ORE && diamondOre.getValue()) return new Color(100, 200, 255, alpha.getIntValue());
+            if (block == Blocks.GOLD_ORE && goldOre.getValue()) return new Color(255, 200, 0, alpha.getIntValue());
+            if (block == Blocks.IRON_ORE && ironOre.getValue()) return new Color(200, 200, 200, alpha.getIntValue());
+            if (block == Blocks.COAL_ORE && coalOre.getValue()) return new Color(50, 50, 50, alpha.getIntValue());
+            if (block == Blocks.EMERALD_ORE && emeraldOre.getValue()) return new Color(0, 255, 0, alpha.getIntValue());
+            if (block == Blocks.LAPIS_ORE && lapisOre.getValue()) return new Color(0, 0, 255, alpha.getIntValue());
+            if (block == Blocks.REDSTONE_ORE && redstoneOre.getValue()) return new Color(255, 0, 0, alpha.getIntValue());
+            if (block == Blocks.NETHER_QUARTZ_ORE && netherQuartzOre.getValue()) return new Color(255, 255, 255, alpha.getIntValue());
+            if (block == Blocks.ANCIENT_DEBRIS && ancientDebris.getValue()) return new Color(100, 50, 0, alpha.getIntValue());
+            if (block == Blocks.NETHER_GOLD_ORE && netherGoldOre.getValue()) return new Color(255, 150, 0, alpha.getIntValue());
+            if (block == Blocks.COPPER_ORE && copperOre.getValue()) return new Color(200, 100, 50, alpha.getIntValue());
+            return null;
         }
         
-        // Check ores
-        if (ores.getValue()) {
-            if (block == Blocks.DIAMOND_ORE && diamondOre.getValue()) return customBlockColors.getOrDefault(Blocks.DIAMOND_ORE, new Color(100, 200, 255, alpha.getIntValue()));
-            if (block == Blocks.GOLD_ORE && goldOre.getValue()) return customBlockColors.getOrDefault(Blocks.GOLD_ORE, new Color(255, 200, 0, alpha.getIntValue()));
-            if (block == Blocks.IRON_ORE && ironOre.getValue()) return customBlockColors.getOrDefault(Blocks.IRON_ORE, new Color(200, 200, 200, alpha.getIntValue()));
-            if (block == Blocks.COAL_ORE && coalOre.getValue()) return customBlockColors.getOrDefault(Blocks.COAL_ORE, new Color(50, 50, 50, alpha.getIntValue()));
-            if (block == Blocks.EMERALD_ORE && emeraldOre.getValue()) return customBlockColors.getOrDefault(Blocks.EMERALD_ORE, new Color(0, 255, 0, alpha.getIntValue()));
-            if (block == Blocks.LAPIS_ORE && lapisOre.getValue()) return customBlockColors.getOrDefault(Blocks.LAPIS_ORE, new Color(0, 0, 255, alpha.getIntValue()));
-            if (block == Blocks.REDSTONE_ORE && redstoneOre.getValue()) return customBlockColors.getOrDefault(Blocks.REDSTONE_ORE, new Color(255, 0, 0, alpha.getIntValue()));
-            if (block == Blocks.NETHER_QUARTZ_ORE && netherQuartzOre.getValue()) return customBlockColors.getOrDefault(Blocks.NETHER_QUARTZ_ORE, new Color(255, 255, 255, alpha.getIntValue()));
-            if (block == Blocks.ANCIENT_DEBRIS && ancientDebris.getValue()) return customBlockColors.getOrDefault(Blocks.ANCIENT_DEBRIS, new Color(100, 50, 0, alpha.getIntValue()));
-            if (block == Blocks.NETHER_GOLD_ORE && netherGoldOre.getValue()) return customBlockColors.getOrDefault(Blocks.NETHER_GOLD_ORE, new Color(255, 150, 0, alpha.getIntValue()));
+        // Storage Mode
+        if (selectionMode.getValue().equals("Storage")) {
+            if (blockEntity instanceof ChestBlockEntity && chests.getValue()) return new Color(200, 100, 0, alpha.getIntValue());
+            if (blockEntity instanceof TrappedChestBlockEntity && trappedChests.getValue()) return new Color(200, 100, 0, alpha.getIntValue());
+            if (blockEntity instanceof EnderChestBlockEntity && enderChests.getValue()) return new Color(100, 0, 200, alpha.getIntValue());
+            if (blockEntity instanceof ShulkerBoxBlockEntity && shulkerBoxes.getValue()) return new Color(150, 0, 200, alpha.getIntValue());
+            if (blockEntity instanceof BarrelBlockEntity && barrels.getValue()) return new Color(255, 100, 100, alpha.getIntValue());
+            return null;
         }
         
-        // Check pistons
-        if (redstone.getValue() && (block == Blocks.PISTON || block == Blocks.STICKY_PISTON)) return pistonColor.getColor();
+        // Utility Mode
+        if (selectionMode.getValue().equals("Utility")) {
+            if (blockEntity instanceof FurnaceBlockEntity && furnaces.getValue()) return new Color(100, 100, 100, alpha.getIntValue());
+            if (blockEntity instanceof BlastFurnaceBlockEntity && blastFurnaces.getValue()) return new Color(100, 100, 100, alpha.getIntValue());
+            if (blockEntity instanceof SmokerBlockEntity && smokers.getValue()) return new Color(100, 100, 100, alpha.getIntValue());
+            if (blockEntity instanceof MobSpawnerBlockEntity && spawners.getValue()) return new Color(150, 100, 200, alpha.getIntValue());
+            if (blockEntity instanceof EnchantingTableBlockEntity && enchantTables.getValue()) return new Color(100, 100, 255, alpha.getIntValue());
+            if (blockEntity instanceof BeaconBlockEntity && beacons.getValue()) return new Color(0, 200, 200, alpha.getIntValue());
+            if ((block == Blocks.ANVIL || block == Blocks.CHIPPED_ANVIL || block == Blocks.DAMAGED_ANVIL) && anvils.getValue()) {
+                return new Color(150, 150, 150, alpha.getIntValue());
+            }
+            return null;
+        }
         
-        // Check other redstone components
-        if (redstone.getValue()) {
-            if (block == Blocks.DROPPER) return dropperColor.getColor();
-            if (block == Blocks.DISPENSER) return dispenserColor.getColor();
-            if (block == Blocks.OBSERVER) return observerColor.getColor();
+        // Redstone Mode
+        if (selectionMode.getValue().equals("Redstone")) {
+            if ((block == Blocks.PISTON && pistons.getValue()) || (block == Blocks.STICKY_PISTON && stickyPistons.getValue())) {
+                return new Color(100, 200, 100, alpha.getIntValue());
+            }
+            if (block == Blocks.DROPPER && droppers.getValue()) return new Color(150, 150, 150, alpha.getIntValue());
+            if (block == Blocks.DISPENSER && dispensers.getValue()) return new Color(150, 150, 150, alpha.getIntValue());
+            if (block == Blocks.OBSERVER && observers.getValue()) return new Color(200, 200, 100, alpha.getIntValue());
+            if (block == Blocks.HOPPER && hoppers.getValue()) return new Color(100, 100, 100, alpha.getIntValue());
+            return null;
         }
         
         return null;
-    }
-    
-    private boolean shouldRenderBlock(Block block) {
-        if (selectionMode.getValue().equals("All Blocks")) return true;
-        
-        if (selectionMode.getValue().equals("Selected Blocks")) {
-            Block selected1 = getBlockFromName(block1.getValue());
-            Block selected2 = getBlockFromName(block2.getValue());
-            Block selected3 = getBlockFromName(block3.getValue());
-            Block selected4 = getBlockFromName(block4.getValue());
-            Block selected5 = getBlockFromName(block5.getValue());
-            Block selected6 = getBlockFromName(block6.getValue());
-            
-            return block == selected1 || block == selected2 || block == selected3 || 
-                   block == selected4 || block == selected5 || block == selected6;
-        }
-        
-        return true;
-    }
-    
-    @Override
-    public void onEnable() {
-        super.onEnable();
-    }
-    
-    @Override
-    public void onDisable() {
-        super.onDisable();
     }
     
     @EventListener
@@ -311,16 +341,19 @@ public final class BlockESP extends Module {
             for (BlockPos blockPos : BlockUtil.getBlockPositions(chunk)) {
                 Block block = mc.world.getBlockState(blockPos).getBlock();
                 
-                if (!shouldRenderBlock(block)) continue;
+                // Skip air
+                if (block == Blocks.AIR) continue;
                 
                 Color color = getBlockColor(block, blockPos);
                 if (color == null) continue;
                 
                 // Render filled box
-                RenderUtils.renderFilledBox(matrices, 
-                    blockPos.getX() + 0.05, blockPos.getY() + 0.05, blockPos.getZ() + 0.05,
-                    blockPos.getX() + 0.95, blockPos.getY() + 0.95, blockPos.getZ() + 0.95,
-                    new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha.getIntValue()));
+                if (filledBox.getValue()) {
+                    RenderUtils.renderFilledBox(matrices, 
+                        blockPos.getX() + 0.05, blockPos.getY() + 0.05, blockPos.getZ() + 0.05,
+                        blockPos.getX() + 0.95, blockPos.getY() + 0.95, blockPos.getZ() + 0.95,
+                        new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha.getIntValue()));
+                }
                 
                 // Render outline
                 if (outline.getValue()) {
