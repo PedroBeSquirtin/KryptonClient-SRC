@@ -237,8 +237,8 @@ public final class HUD extends Module {
             }
         }
         
-        // Draw border
-        RenderUtils.renderOutline(ctx.getMatrices(), x, y, x + size, y + size, new Color(80, 200, 80, 100));
+        // Draw border - FIXED: using renderOutlineBox instead of renderOutline
+        RenderUtils.renderOutlineBox(ctx.getMatrices(), x, y, x + size, y + size, new Color(80, 200, 80, 100));
     }
 
     // BOTTOM RIGHT - Enabled Modules
@@ -327,7 +327,7 @@ public final class HUD extends Module {
             textY += lineHeight;
         }
         
-        // Optional: Add "POTIONS" header
+        // Add "POTIONS" header
         TextRenderer.drawString("POTIONS", ctx, x + padding, startY + padding / 2 - 10, URANIUM_GREEN.getRGB());
     }
 
