@@ -1,10 +1,15 @@
 package skid.krypton.module.modules.render;
 
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import skid.krypton.Krypton;
 import skid.krypton.event.EventListener;
 import skid.krypton.event.events.Render2DEvent;
@@ -31,6 +36,8 @@ public final class HUD extends Module {
     private static final Color TEXT_GRAY = new Color(170, 180, 170, 255);
     private static final Color CARDINAL_COLOR = new Color(80, 200, 80, 200);
     private static final Color CROSSHAIR_COLOR = new Color(80, 200, 80, 180);
+    private static final Color SPAWNER_COLOR = new Color(200, 80, 200, 200);
+    private static final Color CHEST_COLOR = new Color(200, 150, 80, 200);
 
     // SETTINGS
     private final BooleanSetting showWatermark = new BooleanSetting("Watermark", true);
@@ -40,6 +47,7 @@ public final class HUD extends Module {
     private final BooleanSetting showCoordinates = new BooleanSetting("Coordinates", true);
     private final BooleanSetting showRadar = new BooleanSetting("Radar", true);
     private final BooleanSetting showPotions = new BooleanSetting("Potions", true);
+    private final BooleanSetting showBlockEntities = new BooleanSetting("Show Block Entities", true);
     private final NumberSetting radarSize = new NumberSetting("Radar Size", 100, 250, 180, 5);
     private final NumberSetting radarRange = new NumberSetting("Radar Range", 10, 80, 40, 5);
     
@@ -51,7 +59,7 @@ public final class HUD extends Module {
 
         this.addSettings(
                 showWatermark, showInfo, showModules, showTime, showCoordinates,
-                showRadar, radarSize, radarRange, showPotions, moduleSortingMode
+                showRadar, radarSize, radarRange, showPotions, showBlockEntities, moduleSortingMode
         );
     }
 
@@ -205,7 +213,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - Static +, rotating N E S W
+    // RADAR - Static + that reaches edges, rotating N E S W
     private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
         int range = (int) radarRange.getValue();
@@ -223,21 +231,21 @@ public final class HUD extends Module {
         float yaw = mc.player.getYaw();
         double rad = Math.toRadians(yaw);
         
-        // Draw static + crosshair (doesn't rotate)
-        int armLength = size / 3;
+        // Draw thin + crosshair that reaches the edges
+        int armLength = size / 2;
         
-        // Draw horizontal line (left-right)
+        // Draw thin horizontal line (left-right) - 1 pixel thick
         for (int i = -armLength; i <= armLength; i++) {
-            ctx.fill(centerX + i, centerY - 1, centerX + i + 1, centerY + 2, CROSSHAIR_COLOR.getRGB());
+            ctx.fill(centerX + i, centerY, centerX + i + 1, centerY + 1, CROSSHAIR_COLOR.getRGB());
         }
         
-        // Draw vertical line (up-down)
+        // Draw thin vertical line (up-down) - 1 pixel thick
         for (int i = -armLength; i <= armLength; i++) {
-            ctx.fill(centerX - 1, centerY + i, centerX + 2, centerY + i + 1, CROSSHAIR_COLOR.getRGB());
+            ctx.fill(centerX, centerY + i, centerX + 1, centerY + i + 1, CROSSHAIR_COLOR.getRGB());
         }
         
         // Draw center dot
-        ctx.fill(centerX - 2, centerY - 2, centerX + 2, centerY + 2, URANIUM_GREEN.getRGB());
+        ctx.fill(centerX - 1, centerY - 1, centerX + 1, centerY + 1, URANIUM_GREEN.getRGB());
         
         // Draw rotating cardinal directions (N, E, S, W)
         int compassDistance = size / 2 - 15;
@@ -259,31 +267,24 @@ public final class HUD extends Module {
         for (Entity ent : mc.world.getPlayers()) {
             if (ent == mc.player) continue;
             
-            // Calculate relative position in world coordinates
             double dx = ent.getX() - mc.player.getX();
             double dz = ent.getZ() - mc.player.getZ();
             double distance = Math.sqrt(dx * dx + dz * dz);
             
             if (distance > range) continue;
             
-            // Rotate coordinates based on player facing
             double angle = Math.atan2(dz, dx);
             double relAngle = angle - rad;
             double rotatedX = Math.cos(relAngle) * distance;
             double rotatedZ = Math.sin(relAngle) * distance;
             
-            // Scale to radar size
             int px = (int)(centerX + (rotatedX / range) * (size / 2 - 12));
             int py = (int)(centerY + (rotatedZ / range) * (size / 2 - 12));
             
-            // Check bounds
             if (px > x + 6 && px < x + size - 6 && py > y + 6 && py < y + size - 6) {
                 PlayerEntity player = (PlayerEntity) ent;
-                
-                // Draw player dot
                 RenderUtils.renderCircle(ctx.getMatrices(), new Color(80, 200, 80, 200), px, py, 3, 12);
                 
-                // Draw player name
                 String name = player.getName().getString();
                 int nameWidth = TextRenderer.getWidth(name);
                 int nameX = px - nameWidth / 2;
@@ -292,6 +293,33 @@ public final class HUD extends Module {
                 if (nameX > x + 2 && nameX + nameWidth < x + size - 2) {
                     RenderUtils.renderRoundedQuad(ctx.getMatrices(), new Color(0, 0, 0, 120), nameX - 2, nameY - 2, nameX + nameWidth + 2, nameY + 10, 3, 3, 3, 3, 30);
                     TextRenderer.drawString(name, ctx, nameX, nameY, TEXT_WHITE.getRGB());
+                }
+            }
+        }
+        
+        // Draw block entities (spawners, chests, etc.)
+        if (showBlockEntities.getValue()) {
+            for (BlockEntity blockEntity : mc.world.blockEntities) {
+                BlockPos pos = blockEntity.getPos();
+                double dx = pos.getX() + 0.5 - mc.player.getX();
+                double dz = pos.getZ() + 0.5 - mc.player.getZ();
+                double distance = Math.sqrt(dx * dx + dz * dz);
+                
+                if (distance > range) continue;
+                
+                double angle = Math.atan2(dz, dx);
+                double relAngle = angle - rad;
+                double rotatedX = Math.cos(relAngle) * distance;
+                double rotatedZ = Math.sin(relAngle) * distance;
+                
+                int px = (int)(centerX + (rotatedX / range) * (size / 2 - 12));
+                int py = (int)(centerY + (rotatedZ / range) * (size / 2 - 12));
+                
+                if (px > x + 4 && px < x + size - 4 && py > y + 4 && py < y + size - 4) {
+                    Color blockColor = getBlockEntityColor(blockEntity);
+                    if (blockColor != null) {
+                        RenderUtils.renderCircle(ctx.getMatrices(), blockColor, px, py, 2, 10);
+                    }
                 }
             }
         }
@@ -306,6 +334,15 @@ public final class HUD extends Module {
             int radius = (int)((double)r / range * (size / 2 - 6));
             RenderUtils.renderCircle(ctx.getMatrices(), new Color(80, 200, 80, 40), centerX, centerY, radius, 36);
         }
+    }
+    
+    private Color getBlockEntityColor(BlockEntity blockEntity) {
+        if (blockEntity instanceof MobSpawnerBlockEntity) {
+            return SPAWNER_COLOR;
+        }
+        // Add more block entity types as needed
+        // if (blockEntity instanceof ChestBlockEntity) return CHEST_COLOR;
+        return null;
     }
 
     // Coordinates
@@ -327,7 +364,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(coords, ctx, x + padding, y + 6, TEXT_GRAY.getRGB());
     }
 
-    // Potions - Simple and clean
+    // Potions - Now working with proper duration calculation
     private void renderPotions(DrawContext ctx) {
         List<StatusEffectInstance> effects = new ArrayList<>(mc.player.getStatusEffects());
         if (effects.isEmpty()) return;
@@ -342,7 +379,8 @@ public final class HUD extends Module {
         int maxWidth = 0;
         
         for (StatusEffectInstance effect : effects) {
-            String text = formatPotionName(effect) + " " + (effect.getDuration() / 20) + "s";
+            int durationSeconds = effect.getDuration() / 20;
+            String text = formatPotionName(effect) + " " + formatDuration(durationSeconds);
             int w = TextRenderer.getWidth(text);
             if (w > maxWidth) maxWidth = w;
         }
@@ -355,7 +393,8 @@ public final class HUD extends Module {
         // Potion list with colored dots
         int textY = y + padding / 2 + 2;
         for (StatusEffectInstance effect : effects) {
-            String text = formatPotionName(effect) + " " + (effect.getDuration() / 20) + "s";
+            int durationSeconds = effect.getDuration() / 20;
+            String text = formatPotionName(effect) + " " + formatDuration(durationSeconds);
             
             // Draw colored dot
             RenderUtils.renderCircle(ctx.getMatrices(), getPotionColor(effect), x + padding + 4, textY + 5, 4, 12);
@@ -363,6 +402,20 @@ public final class HUD extends Module {
             // Draw text
             TextRenderer.drawString(text, ctx, x + padding + 12, textY, TEXT_GRAY.getRGB());
             textY += lineHeight;
+        }
+    }
+    
+    private String formatDuration(int seconds) {
+        if (seconds >= 3600) {
+            int hours = seconds / 3600;
+            int minutes = (seconds % 3600) / 60;
+            return hours + "h " + minutes + "m";
+        } else if (seconds >= 60) {
+            int minutes = seconds / 60;
+            int remainingSeconds = seconds % 60;
+            return minutes + "m " + remainingSeconds + "s";
+        } else {
+            return seconds + "s";
         }
     }
 
