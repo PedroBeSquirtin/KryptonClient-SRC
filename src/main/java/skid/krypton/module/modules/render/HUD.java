@@ -180,10 +180,9 @@ public final class HUD extends Module {
         TextRenderer.drawString(coords, ctx, x + padding, y + 6, TEXT_GRAY.getRGB());
     }
 
-    // RADAR - Bottom right above modules
+    // RADAR - Bottom right above modules - FIXED
     private void renderRadar(DrawContext ctx, int screenWidth, int screenHeight) {
         int size = (int) radarSize.getValue();
-        int padding = 10;
         
         // Calculate position above modules
         int modulesHeight = 0;
@@ -237,8 +236,9 @@ public final class HUD extends Module {
             }
         }
         
-        // Draw border - FIXED: using renderOutlineBox instead of renderOutline
-        RenderUtils.renderOutlineBox(ctx.getMatrices(), x, y, x + size, y + size, new Color(80, 200, 80, 100));
+        // Draw border using renderRoundedOutline
+        RenderUtils.renderRoundedOutline(ctx, new Color(80, 200, 80, 100), 
+            x, y, x + size, y + size, 8, 8, 8, 8, 2, 5);
     }
 
     // BOTTOM RIGHT - Enabled Modules
