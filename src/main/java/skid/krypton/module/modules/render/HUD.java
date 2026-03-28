@@ -70,7 +70,10 @@ public final class HUD extends Module {
                 renderTopLeft(ctx);
             }
             
-            // TOP CENTER - Time
+            // TOP CENTER - Facing Direction (above time)
+            renderFacingDirection(ctx, w);
+            
+            // TOP CENTER - Time (below facing)
             if (showTime.getValue()) {
                 renderTime(ctx, w);
             }
@@ -184,7 +187,31 @@ public final class HUD extends Module {
         }
     }
 
-    // TOP CENTER - Time
+    // TOP CENTER - Facing Direction (above time)
+    private void renderFacingDirection(DrawContext ctx, int screenWidth) {
+        float yaw = mc.player.getYaw();
+        String facingText = "";
+        if (yaw >= 0 && yaw < 45 || yaw >= 315) facingText = "S";
+        else if (yaw >= 45 && yaw < 135) facingText = "W";
+        else if (yaw >= 135 && yaw < 225) facingText = "N";
+        else if (yaw >= 225 && yaw < 315) facingText = "E";
+        
+        String facingString = "Facing: " + facingText + " (" + (int)yaw + "°)";
+        int width = TextRenderer.getWidth(facingString);
+        int padding = 14;
+        int bgWidth = width + padding * 2;
+        int bgHeight = 22;
+        int x = (screenWidth - bgWidth) / 2;
+        int y = 12;
+        
+        // Background
+        RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
+        
+        // Text
+        TextRenderer.drawString(facingString, ctx, x + padding, y + 6, CARDINAL_COLOR.getRGB());
+    }
+
+    // TOP CENTER - Time (below facing)
     private void renderTime(DrawContext ctx, int screenWidth) {
         String time = timeFormatter.format(new Date());
         int width = TextRenderer.getWidth(time);
@@ -192,7 +219,7 @@ public final class HUD extends Module {
         int bgWidth = width + padding * 2;
         int bgHeight = 22;
         int x = (screenWidth - bgWidth) / 2;
-        int y = 12;
+        int y = 38; // 12 (facing y) + 22 (facing height) + 4 spacing
         
         // Background
         RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
@@ -282,14 +309,6 @@ public final class HUD extends Module {
         TextRenderer.drawString("S", ctx, southX - 4, southY - 5, CARDINAL_COLOR.getRGB());
         TextRenderer.drawString("E", ctx, eastX - 4, eastY - 5, CARDINAL_COLOR.getRGB());
         TextRenderer.drawString("W", ctx, westX - 4, westY - 5, CARDINAL_COLOR.getRGB());
-        
-        // Draw facing direction debug text
-        String facingText = "";
-        if (yaw >= 0 && yaw < 45 || yaw >= 315) facingText = "S";
-        else if (yaw >= 45 && yaw < 135) facingText = "W";
-        else if (yaw >= 135 && yaw < 225) facingText = "N";
-        else if (yaw >= 225 && yaw < 315) facingText = "E";
-        TextRenderer.drawString("Facing: " + facingText + " (" + (int)yaw + "°)", ctx, x + 5, y + size + 5, TEXT_GRAY.getRGB());
         
         // Draw other players
         for (Entity ent : mc.world.getPlayers()) {
