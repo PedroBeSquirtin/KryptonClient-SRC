@@ -21,12 +21,9 @@ public final class ClickGUI extends Screen {
     private int tooltipX;
     private int tooltipY;
     
-    // Brighter Uranium Green Color Scheme
     private final Color DESCRIPTION_BG = new Color(20, 28, 20, 245);
-    private final Color ACCENT = new Color(100, 255, 100, 255);
-    private final Color ACCENT_GLOW = new Color(100, 255, 100, 80);
+    private final Color ACCENT_GREEN = new Color(120, 255, 120, 255);
     
-    // Window positioning - fixed positions (no dragging)
     private static final int WINDOW_START_X = 50;
     private static final int WINDOW_START_Y = 40;
     private static final int WINDOW_WIDTH = 240;
@@ -124,26 +121,23 @@ public final class ClickGUI extends Screen {
             }
             
             int tooltipX = x - 8;
-            int tooltipY = y - 8;
+            int tooltipY = y - 5;
             int tooltipWidth = textWidth + 20;
-            int tooltipHeight = 26;
+            int tooltipHeight = 24;
             
-            for (int i = 1; i <= 3; i++) {
-                int alpha = 30 - i * 8;
-                RenderUtils.renderRoundedQuad(context.getMatrices(), new Color(0, 0, 0, alpha),
-                    tooltipX + i, tooltipY + i, tooltipX + tooltipWidth + i, tooltipY + tooltipHeight + i,
-                    6, 6, 6, 6, 30);
-            }
-            
+            // Background
             RenderUtils.renderRoundedQuad(context.getMatrices(), DESCRIPTION_BG,
                 tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight,
                 8, 8, 8, 8, 50);
             
-            RenderUtils.renderRoundedQuad(context.getMatrices(), new Color(100, 255, 100, 80),
+            // Border
+            RenderUtils.renderRoundedQuad(context.getMatrices(), new Color(120, 255, 120, 80),
                 tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight,
                 8, 8, 8, 8, 30);
             
-            TextRenderer.drawString(text, context, x, y + 4, new Color(220, 255, 220, 255).getRGB());
+            // Text - perfectly centered vertically in the bubble
+            int textYPos = tooltipY + (tooltipHeight - 8) / 2;
+            TextRenderer.drawString(text, context, x, textYPos, new Color(255, 255, 255, 255).getRGB());
         } catch (Exception e) {
             e.printStackTrace();
         }
