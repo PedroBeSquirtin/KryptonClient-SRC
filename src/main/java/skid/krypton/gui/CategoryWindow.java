@@ -29,16 +29,16 @@ public final class CategoryWindow {
     // Clean Green Color Scheme
     private final Color BG_COLOR = new Color(18, 25, 18, 245);
     private final Color HEADER_COLOR = new Color(25, 35, 25, 255);
-    private final Color ACCENT_GREEN = new Color(120, 255, 120, 255); // Brighter!
+    private final Color ACCENT_GREEN = new Color(120, 255, 120, 255);
     private final Color HOVER_GREEN = new Color(120, 255, 120, 25);
     private final Color BORDER_COLOR = new Color(70, 100, 70, 120);
     
-    // Simple text icons that WILL display
-    private final String COMBAT_ICON = "[S]";
-    private final String MISC_ICON = "[M]";
-    private final String DONUT_ICON = "[D]";
-    private final String RENDER_ICON = "[E]";
-    private final String CLIENT_ICON = "[C]";
+    // Working icons using Unicode
+    private final String COMBAT_ICON = "⚔";
+    private final String MISC_ICON = "⚙";
+    private final String DONUT_ICON = "◉";
+    private final String RENDER_ICON = "👁";
+    private final String CLIENT_ICON = "◆";
 
     public CategoryWindow(final int x, final int y, final int width, final int height, final Category category, final ClickGUI parent) {
         this.moduleButtons = new ArrayList<>();
@@ -85,30 +85,23 @@ public final class CategoryWindow {
             float topRadius = 10.0F;
             float bottomRadius = this.extended ? 0.0F : 10.0F;
             
-            // Main panel
             RenderUtils.renderRoundedQuad(context.getMatrices(), panelBg, 
                 this.x, this.y, this.x + this.width, this.y + this.height, 
                 topRadius, topRadius, bottomRadius, bottomRadius, 50.0);
             
-            // Header
             context.fill(this.x, this.y, this.x + this.width, this.y + 32, HEADER_COLOR.getRGB());
             
-            // Get icon for category - using simple text icons that WILL display
             String icon = getCategoryIcon(this.category);
             String categoryName = this.category.name.toString();
             String fullText = icon + " " + categoryName;
             
-            // Calculate text position - perfectly centered
             int textX = this.x + (this.width - getTextWidth(fullText)) / 2;
-            int textY = this.y + 11;
+            int textY = this.y + 12;
             
-            // Draw text with bright green
             drawText(context, fullText, textX, textY, ACCENT_GREEN.getRGB());
             
-            // Bottom accent line
             context.fill(this.x, this.y + 31, this.x + this.width, this.y + 32, ACCENT_GREEN.getRGB());
             
-            // Border
             RenderUtils.renderRoundedQuad(context.getMatrices(), BORDER_COLOR,
                 this.x, this.y, this.x + this.width, this.y + this.height,
                 topRadius, topRadius, bottomRadius, bottomRadius, 30.0);
@@ -140,7 +133,7 @@ public final class CategoryWindow {
     }
     
     private String getCategoryIcon(Category category) {
-        if (category == null || category.name == null) return "[?]";
+        if (category == null || category.name == null) return "?";
         String name = category.name.toString().toLowerCase();
         switch (name) {
             case "combat": return COMBAT_ICON;
@@ -148,7 +141,7 @@ public final class CategoryWindow {
             case "donut": return DONUT_ICON;
             case "render": return RENDER_ICON;
             case "client": return CLIENT_ICON;
-            default: return "[?]";
+            default: return "?";
         }
     }
 
