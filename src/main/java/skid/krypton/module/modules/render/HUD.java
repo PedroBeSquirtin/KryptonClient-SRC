@@ -4,7 +4,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.util.math.MathHelper;
 import skid.krypton.Krypton;
 import skid.krypton.event.EventListener;
@@ -37,8 +36,9 @@ public final class HUD extends Module {
     private final NumberSetting opacity = new NumberSetting("Opacity", 0.0, 1.0, 0.8f, 0.05f);
     private final NumberSetting cornerRadius = new NumberSetting("Corner Radius", 0.0, 10.0, 5.0, 0.5);
 
-    private final ModeSetting<String> moduleSortingMode =
-            new ModeSetting<>("Sort Mode", "Length", new String[]{"Length", "Alphabetical", "Category"});
+    // Use the existing ModuleListSorting enum
+    private final ModeSetting<ModuleListSorting> moduleSortingMode =
+            new ModeSetting<>("Sort Mode", ModuleListSorting.LENGTH, ModuleListSorting.class);
 
     private final BooleanSetting enableRainbowEffect = new BooleanSetting("Rainbow", false);
     private final NumberSetting rainbowSpeed = new NumberSetting("Rainbow Speed", 0.1f, 10.0, 2.0, 0.1f);
@@ -160,15 +160,20 @@ public final class HUD extends Module {
         }
     }
 
-    // POTIONS - FIXED
+    // POTIONS - Fixed to work with your Minecraft version
     private void renderPotions(DrawContext ctx) {
         int x = 5;
         int y = 145;
         int offset = 0;
 
         for (StatusEffectInstance effect : mc.player.getStatusEffects()) {
-            // Get potion name using getTranslationKey() and then translate
-            String effectName = effect.getEffectType().getName().getString();
+            // Get potion name - using getTranslationKey() which is more reliable
+            String effectName = effect.getEffectType().getTranslationKey();
+            // Remove the "effect.minecraft." prefix
+            effectName = effectName.replace("effect.minecraft.", "");
+            // Capitalize first letter
+            effectName = effectName.substring(0, 1).toUpperCase() + effectName.substring(1);
+            
             String text = effectName + " " + (effect.getDuration() / 20) + "s";
 
             int width = TextRenderer.getWidth(text);
@@ -200,7 +205,7 @@ public final class HUD extends Module {
         }
     }
 
-    // MODULE LIST - FIXED
+    // MODULE LIST
     private void renderModules(DrawContext ctx, int w) {
         List<Module> list = getSortedModules();
         int y = 5;
@@ -208,7 +213,6 @@ public final class HUD extends Module {
         for (Module m : list) {
             if (!m.isEnabled()) continue;
 
-            // Convert CharSequence to String properly
             String name = m.getName().toString();
             int width = TextRenderer.getWidth(name);
 
@@ -238,14 +242,16 @@ public final class HUD extends Module {
         List<Module> modules = Krypton.INSTANCE.getModuleManager().b();
         List<Module> sorted = new ArrayList<>(modules);
         
-        String mode = moduleSortingMode.getValue();
-        
-        if (mode.equals("Length")) {
-            sorted.sort((a, b) -> Integer.compare(b.getName().length(), a.getName().length()));
-        } else if (mode.equals("Alphabetical")) {
-            sorted.sort((a, b) -> a.getName().toString().compareToIgnoreCase(b.getName().toString()));
-        } else if (mode.equals("Category")) {
-            sorted.sort((a, b) -> a.getCategory().compareTo(b.getCategory()));
+        switch (moduleSortingMode.getValue()) {
+            case LENGTH:
+                sorted.sort((a, b) -> Integer.compare(b.getName().length(), a.getName().length()));
+                break;
+            case ALPHABETICAL:
+                sorted.sort((a, b) -> a.getName().toString().compareToIgnoreCase(b.getName().toString()));
+                break;
+            case CATEGORY:
+                sorted.sort((a, b) -> a.getCategory().compareTo(b.getCategory()));
+                break;
         }
         
         return sorted;
@@ -262,9 +268,13 @@ public final class HUD extends Module {
 
     public void addNotification(String message) {
         notifications.add(message);
-        // Keep only last 5 notifications
         while (notifications.size() > 5) {
             notifications.remove(0);
         }
+    }
+
+    // This enum must exist in your client - it's already there from your original code
+    enum ModuleListSorting {
+        LENGTH, ALPHABETICAL, CATEGORY
     }
 }
