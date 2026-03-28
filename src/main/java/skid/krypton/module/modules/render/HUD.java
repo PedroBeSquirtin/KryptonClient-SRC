@@ -4,7 +4,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.util.registry.RegistryEntry;
 import skid.krypton.Krypton;
 import skid.krypton.event.EventListener;
 import skid.krypton.event.events.Render2DEvent;
@@ -156,19 +155,16 @@ public final class HUD extends Module {
         }
     }
 
-    // POTIONS - fixed for RegistryEntry
+    // POTIONS - Fixed for 1.21 (no RegistryEntry needed)
     private void renderPotions(DrawContext ctx) {
         int x = 5;
         int y = 145;
         int offset = 0;
 
         for (StatusEffectInstance effect : mc.player.getStatusEffects()) {
-            RegistryEntry<?> effectEntry = effect.getEffectType();
-            String effectName = effectEntry.value().getTranslationKey(); // fixed
-
-            effectName = effectName.replace("effect.minecraft.", "");
-            effectName = effectName.substring(0, 1).toUpperCase() + effectName.substring(1);
-
+            // Get potion name directly - works in 1.21
+            String effectName = effect.getEffectType().getName().getString();
+            
             String text = effectName + " " + (effect.getDuration() / 20) + "s";
             int width = TextRenderer.getWidth(text);
 
@@ -233,9 +229,15 @@ public final class HUD extends Module {
         List<Module> sorted = new ArrayList<>(modules);
 
         switch (moduleSortingMode.getValue()) {
-            case LENGTH -> sorted.sort((a, b) -> Integer.compare(b.getName().length(), a.getName().length()));
-            case ALPHABETICAL -> sorted.sort((a, b) -> a.getName().toString().compareToIgnoreCase(b.getName().toString()));
-            case CATEGORY -> sorted.sort((a, b) -> a.getCategory().compareTo(b.getCategory()));
+            case LENGTH:
+                sorted.sort((a, b) -> Integer.compare(b.getName().length(), a.getName().length()));
+                break;
+            case ALPHABETICAL:
+                sorted.sort((a, b) -> a.getName().toString().compareToIgnoreCase(b.getName().toString()));
+                break;
+            case CATEGORY:
+                sorted.sort((a, b) -> a.getCategory().compareTo(b.getCategory()));
+                break;
         }
         return sorted;
     }
