@@ -2,11 +2,9 @@ package skid.krypton.module.modules.render;
 
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Identifier;
 import skid.krypton.Krypton;
 import skid.krypton.event.EventListener;
 import skid.krypton.event.events.Render2DEvent;
@@ -34,35 +32,17 @@ public final class HUD extends Module {
     
     // Potion Colors
     private static final Color SPEED_COLOR = new Color(100, 200, 255, 200);
-    private static final Color SLOWNESS_COLOR = new Color(100, 100, 150, 200);
-    private static final Color HASTE_COLOR = new Color(200, 200, 100, 200);
-    private static final Color MINING_FATIGUE_COLOR = new Color(100, 100, 100, 200);
     private static final Color STRENGTH_COLOR = new Color(255, 100, 100, 200);
     private static final Color JUMP_BOOST_COLOR = new Color(100, 255, 100, 200);
-    private static final Color NAUSEA_COLOR = new Color(100, 255, 100, 200);
     private static final Color REGENERATION_COLOR = new Color(255, 100, 200, 200);
     private static final Color RESISTANCE_COLOR = new Color(200, 150, 100, 200);
     private static final Color FIRE_RESISTANCE_COLOR = new Color(255, 150, 50, 200);
     private static final Color WATER_BREATHING_COLOR = new Color(50, 150, 255, 200);
     private static final Color INVISIBILITY_COLOR = new Color(150, 150, 150, 200);
-    private static final Color BLINDNESS_COLOR = new Color(50, 50, 50, 200);
     private static final Color NIGHT_VISION_COLOR = new Color(100, 200, 100, 200);
-    private static final Color HUNGER_COLOR = new Color(100, 100, 50, 200);
-    private static final Color WEAKNESS_COLOR = new Color(150, 100, 100, 200);
     private static final Color POISON_COLOR = new Color(100, 150, 50, 200);
     private static final Color WITHER_COLOR = new Color(50, 50, 50, 200);
-    private static final Color HEALTH_BOOST_COLOR = new Color(255, 100, 100, 200);
     private static final Color ABSORPTION_COLOR = new Color(255, 200, 100, 200);
-    private static final Color SATURATION_COLOR = new Color(200, 100, 200, 200);
-    private static final Color GLOWING_COLOR = new Color(255, 255, 100, 200);
-    private static final Color LEVITATION_COLOR = new Color(100, 200, 200, 200);
-    private static final Color LUCK_COLOR = new Color(200, 200, 100, 200);
-    private static final Color BAD_LUCK_COLOR = new Color(100, 100, 50, 200);
-    private static final Color SLOW_FALLING_COLOR = new Color(150, 200, 255, 200);
-    private static final Color CONDUIT_POWER_COLOR = new Color(100, 200, 200, 200);
-    private static final Color DOLPHINS_GRACE_COLOR = new Color(100, 200, 255, 200);
-    private static final Color HERO_OF_THE_VILLAGE_COLOR = new Color(200, 200, 100, 200);
-    private static final Color DARKNESS_COLOR = new Color(50, 50, 50, 200);
 
     // SETTINGS
     private final BooleanSetting showWatermark = new BooleanSetting("Watermark", true);
@@ -237,7 +217,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - Left side (shows player faces) - FIXED
+    // RADAR - Left side (shows player dots with names)
     private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
         int range = (int) radarRange.getValue();
@@ -270,31 +250,22 @@ public final class HUD extends Module {
             
             // Check bounds
             if (px > x + 4 && px < x + size - 4 && py > y + 4 && py < y + size - 4) {
-                // Draw player head
                 PlayerEntity player = (PlayerEntity) ent;
                 
-                // Get skin texture - FIXED: use getSkinTextures()
-                Identifier skin = player.getSkinTextures().texture();
-                
-                // Draw circle background
-                RenderUtils.renderCircle(ctx.getMatrices(), new Color(0, 0, 0, 150), px, py, 8, 16);
-                
-                // Draw player head (scaled down)
-                ctx.getMatrices().push();
-                ctx.getMatrices().translate(px - 4, py - 4, 0);
-                ctx.getMatrices().scale(0.5f, 0.5f, 1);
-                ctx.drawTexture(skin, 0, 0, 8, 8, 8, 8, 64, 64);
-                ctx.getMatrices().pop();
+                // Draw player dot
+                RenderUtils.renderCircle(ctx.getMatrices(), new Color(80, 200, 80, 200), px, py, 4, 12);
                 
                 // Draw player name
                 String name = player.getName().getString();
                 int nameWidth = TextRenderer.getWidth(name);
                 int nameX = px - nameWidth / 2;
-                int nameY = py + 12;
+                int nameY = py + 8;
                 
                 // Name background
-                RenderUtils.renderRoundedQuad(ctx.getMatrices(), new Color(0, 0, 0, 150), nameX - 2, nameY - 2, nameX + nameWidth + 2, nameY + 10, 4, 4, 4, 4, 30);
-                TextRenderer.drawString(name, ctx, nameX, nameY, TEXT_WHITE.getRGB());
+                if (nameX > x + 2 && nameX + nameWidth < x + size - 2) {
+                    RenderUtils.renderRoundedQuad(ctx.getMatrices(), new Color(0, 0, 0, 150), nameX - 2, nameY - 2, nameX + nameWidth + 2, nameY + 10, 4, 4, 4, 4, 30);
+                    TextRenderer.drawString(name, ctx, nameX, nameY, TEXT_WHITE.getRGB());
+                }
             }
         }
         
@@ -377,35 +348,17 @@ public final class HUD extends Module {
         String name = effect.getEffectType().value().getName().getString().toLowerCase();
         
         if (name.contains("speed")) return SPEED_COLOR;
-        if (name.contains("slowness")) return SLOWNESS_COLOR;
-        if (name.contains("haste")) return HASTE_COLOR;
-        if (name.contains("mining fatigue")) return MINING_FATIGUE_COLOR;
         if (name.contains("strength")) return STRENGTH_COLOR;
         if (name.contains("jump boost")) return JUMP_BOOST_COLOR;
-        if (name.contains("nausea")) return NAUSEA_COLOR;
         if (name.contains("regeneration")) return REGENERATION_COLOR;
         if (name.contains("resistance")) return RESISTANCE_COLOR;
         if (name.contains("fire resistance")) return FIRE_RESISTANCE_COLOR;
         if (name.contains("water breathing")) return WATER_BREATHING_COLOR;
         if (name.contains("invisibility")) return INVISIBILITY_COLOR;
-        if (name.contains("blindness")) return BLINDNESS_COLOR;
         if (name.contains("night vision")) return NIGHT_VISION_COLOR;
-        if (name.contains("hunger")) return HUNGER_COLOR;
-        if (name.contains("weakness")) return WEAKNESS_COLOR;
         if (name.contains("poison")) return POISON_COLOR;
         if (name.contains("wither")) return WITHER_COLOR;
-        if (name.contains("health boost")) return HEALTH_BOOST_COLOR;
         if (name.contains("absorption")) return ABSORPTION_COLOR;
-        if (name.contains("saturation")) return SATURATION_COLOR;
-        if (name.contains("glowing")) return GLOWING_COLOR;
-        if (name.contains("levitation")) return LEVITATION_COLOR;
-        if (name.contains("luck")) return LUCK_COLOR;
-        if (name.contains("bad luck")) return BAD_LUCK_COLOR;
-        if (name.contains("slow falling")) return SLOW_FALLING_COLOR;
-        if (name.contains("conduit power")) return CONDUIT_POWER_COLOR;
-        if (name.contains("dolphin's grace")) return DOLPHINS_GRACE_COLOR;
-        if (name.contains("hero of the village")) return HERO_OF_THE_VILLAGE_COLOR;
-        if (name.contains("darkness")) return DARKNESS_COLOR;
         
         return new Color(200, 200, 200, 200);
     }
