@@ -1,12 +1,9 @@
 package skid.krypton.module.modules.render;
 
-import net.minecraft.block.entity.*;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.chunk.WorldChunk;
 import skid.krypton.Krypton;
 import skid.krypton.event.EventListener;
 import skid.krypton.event.events.Render2DEvent;
@@ -34,14 +31,6 @@ public final class HUD extends Module {
     private static final Color TEXT_GRAY = new Color(170, 180, 170, 255);
     private static final Color CARDINAL_COLOR = new Color(80, 200, 80, 200);
     private static final Color CROSSHAIR_COLOR = new Color(80, 200, 80, 180);
-    
-    // Block Entity Colors
-    private static final Color SPAWNER_COLOR = new Color(200, 80, 200, 200);
-    private static final Color CHEST_COLOR = new Color(200, 150, 80, 200);
-    private static final Color SHULKER_COLOR = new Color(150, 80, 200, 200);
-    private static final Color BEACON_COLOR = new Color(80, 200, 200, 200);
-    private static final Color BARREL_COLOR = new Color(200, 120, 80, 200);
-    private static final Color PISTON_COLOR = new Color(100, 200, 100, 200);
 
     // SETTINGS
     private final BooleanSetting showWatermark = new BooleanSetting("Watermark", true);
@@ -50,22 +39,20 @@ public final class HUD extends Module {
     private final BooleanSetting showTime = new BooleanSetting("Time", true);
     private final BooleanSetting showCoordinates = new BooleanSetting("Coordinates", true);
     private final BooleanSetting showRadar = new BooleanSetting("Radar", true);
-    private final BooleanSetting showBlockEntities = new BooleanSetting("Show Block Entities", true);
-    private final NumberSetting radarSize = new NumberSetting("Radar Size", 100, 250, 180, 5);
     private final NumberSetting radarRange = new NumberSetting("Radar Range", 10, 80, 40, 5);
     
     private final ModeSetting<ModuleListSorting> moduleSortingMode =
             new ModeSetting<>("Sort Mode", ModuleListSorting.LENGTH, ModuleListSorting.class);
 
-    // Block entity counter for display
-    private final Map<String, Integer> blockEntityCounts = new ConcurrentHashMap<>();
+    // Fixed radar size
+    private static final int RADAR_SIZE = 250;
 
     public HUD() {
         super("HUD", "Clean HUD", -1, Category.RENDER);
 
         this.addSettings(
                 showWatermark, showInfo, showModules, showTime, showCoordinates,
-                showRadar, radarSize, radarRange, showBlockEntities, moduleSortingMode
+                showRadar, radarRange, moduleSortingMode
         );
     }
 
@@ -77,9 +64,6 @@ public final class HUD extends Module {
             int h = mc.getWindow().getHeight();
 
             RenderUtils.unscaledProjection();
-
-            // Reset block entity counts
-            blockEntityCounts.clear();
 
             // TOP LEFT - Watermark and Info
             if (showWatermark.getValue() || showInfo.getValue()) {
@@ -94,11 +78,6 @@ public final class HUD extends Module {
             // LEFT SIDE - Radar
             if (showRadar.getValue()) {
                 renderRadar(ctx);
-            }
-            
-            // LEFT SIDE - Block Entity Counter (right side of radar)
-            if (showBlockEntities.getValue() && !blockEntityCounts.isEmpty()) {
-                renderBlockEntityCounter(ctx);
             }
             
             // LEFT SIDE - Coordinates (below radar)
@@ -121,7 +100,7 @@ public final class HUD extends Module {
         int padding = 12;
         int lineHeight = 16;
         int x = 12;
-        int y = getTopLeftHeight() + (int) radarSize.getValue() + 16 + 32;
+        int y = getTopLeftHeight() + RADAR_SIZE + 16 + 32;
         int moduleCount = 0;
         
         for (Module m : list) {
@@ -222,9 +201,9 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - FIXED: Arrow points where you're looking, cardinal directions correct, entities positioned correctly
+    // RADAR - Fixed size 250, shows players with correct facing direction
     private void renderRadar(DrawContext ctx) {
-        int size = (int) radarSize.getValue();
+        int size = RADAR_SIZE;
         int range = (int) radarRange.getValue();
         int x = 12;
         int y = getTopLeftHeight() + 12;
@@ -304,7 +283,7 @@ public final class HUD extends Module {
         TextRenderer.drawString("E", ctx, eastX - 4, eastY - 5, CARDINAL_COLOR.getRGB());
         TextRenderer.drawString("W", ctx, westX - 4, westY - 5, CARDINAL_COLOR.getRGB());
         
-        // Draw direction debug text to verify facing
+        // Draw facing direction debug text
         String facingText = "";
         if (yaw >= 0 && yaw < 45 || yaw >= 315) facingText = "S";
         else if (yaw >= 45 && yaw < 135) facingText = "W";
@@ -312,7 +291,7 @@ public final class HUD extends Module {
         else if (yaw >= 225 && yaw < 315) facingText = "E";
         TextRenderer.drawString("Facing: " + facingText + " (" + (int)yaw + "°)", ctx, x + 5, y + size + 5, TEXT_GRAY.getRGB());
         
-        // Draw other players using correct coordinate system
+        // Draw other players
         for (Entity ent : mc.world.getPlayers()) {
             if (ent == mc.player) continue;
             
@@ -350,69 +329,6 @@ public final class HUD extends Module {
             }
         }
         
-        // Draw block entities using the same coordinate system
-        if (showBlockEntities.getValue()) {
-            for (int chunkX = -range; chunkX <= range; chunkX++) {
-                for (int chunkZ = -range; chunkZ <= range; chunkZ++) {
-                    WorldChunk chunk = mc.world.getChunkManager().getWorldChunk(mc.player.getChunkPos().x + chunkX, mc.player.getChunkPos().z + chunkZ);
-                    if (chunk != null) {
-                        for (BlockPos pos : chunk.getBlockEntityPositions()) {
-                            BlockEntity blockEntity = mc.world.getBlockEntity(pos);
-                            if (blockEntity == null) continue;
-                            
-                            // Check Y level - show all from -64 to 320
-                            if (pos.getY() < -64 || pos.getY() > 320) continue;
-                            
-                            // Only show specific block types
-                            if (!shouldShowBlockEntity(blockEntity)) continue;
-                            
-                            double dx = pos.getX() + 0.5 - mc.player.getX();
-                            double dz = pos.getZ() + 0.5 - mc.player.getZ();
-                            double distance = Math.sqrt(dx * dx + dz * dz);
-                            
-                            if (distance > range) continue;
-                            
-                            // Count block entities for display
-                            String entityType = getBlockEntityName(blockEntity);
-                            blockEntityCounts.merge(entityType, 1, Integer::sum);
-                            
-                            // Calculate the angle to the block entity
-                            double angleToEntity = Math.atan2(dz, dx);
-                            // Calculate angle relative to facing direction
-                            double relativeAngle = angleToEntity - facingRad;
-                            
-                            // Convert to radar coordinates: forward direction goes to the top
-                            double radarX = Math.sin(relativeAngle) * distance;
-                            double radarY = -Math.cos(relativeAngle) * distance;
-                            
-                            int px = (int)(centerX + (radarX / range) * (size / 2 - 12));
-                            int py = (int)(centerY + (radarY / range) * (size / 2 - 12));
-                            
-                            if (px > x + 4 && px < x + size - 4 && py > y + 4 && py < y + size - 4) {
-                                Color blockColor = getBlockEntityColor(blockEntity);
-                                if (blockColor != null) {
-                                    // Draw colored dot
-                                    RenderUtils.renderCircle(ctx.getMatrices(), blockColor, px, py, 3, 12);
-                                    
-                                    // Draw the first letter of the block type
-                                    String firstLetter = getBlockEntityIcon(blockEntity);
-                                    TextRenderer.drawString(firstLetter, ctx, px - 3, py - 4, TEXT_WHITE.getRGB());
-                                    
-                                    // Draw small indicator for distance/direction
-                                    String relDir = "";
-                                    if (relativeAngle > -Math.PI/4 && relativeAngle <= Math.PI/4) relDir = "→";
-                                    else if (relativeAngle > Math.PI/4 && relativeAngle <= 3*Math.PI/4) relDir = "↑";
-                                    else if (relativeAngle > 3*Math.PI/4 || relativeAngle <= -3*Math.PI/4) relDir = "←";
-                                    else relDir = "↓";
-                                    TextRenderer.drawString(relDir, ctx, px + 4, py - 4, TEXT_GRAY.getRGB());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
         // Draw border
         RenderUtils.renderRoundedOutline(ctx, new Color(80, 200, 80, 150), 
             x, y, x + size, y + size, 8, 8, 8, 8, 2, 5);
@@ -422,93 +338,6 @@ public final class HUD extends Module {
         for (int r = step; r <= range; r += step) {
             int radius = (int)((double)r / range * (size / 2 - 6));
             RenderUtils.renderCircle(ctx.getMatrices(), new Color(80, 200, 80, 40), centerX, centerY, radius, 36);
-        }
-    }
-    
-    private boolean shouldShowBlockEntity(BlockEntity blockEntity) {
-        return blockEntity instanceof MobSpawnerBlockEntity ||
-               blockEntity instanceof ChestBlockEntity ||
-               blockEntity instanceof ShulkerBoxBlockEntity ||
-               blockEntity instanceof BeaconBlockEntity ||
-               blockEntity instanceof BarrelBlockEntity ||
-               blockEntity instanceof PistonBlockEntity;
-    }
-    
-    private String getBlockEntityName(BlockEntity blockEntity) {
-        if (blockEntity instanceof MobSpawnerBlockEntity) return "Spawner";
-        if (blockEntity instanceof ChestBlockEntity) return "Chest";
-        if (blockEntity instanceof ShulkerBoxBlockEntity) return "Shulker";
-        if (blockEntity instanceof BeaconBlockEntity) return "Beacon";
-        if (blockEntity instanceof BarrelBlockEntity) return "Barrel";
-        if (blockEntity instanceof PistonBlockEntity) return "Piston";
-        return "Block";
-    }
-    
-    private String getBlockEntityIcon(BlockEntity blockEntity) {
-        if (blockEntity instanceof MobSpawnerBlockEntity) return "S";
-        if (blockEntity instanceof ChestBlockEntity) return "C";
-        if (blockEntity instanceof ShulkerBoxBlockEntity) return "B";
-        if (blockEntity instanceof BeaconBlockEntity) return "B";
-        if (blockEntity instanceof BarrelBlockEntity) return "R";
-        if (blockEntity instanceof PistonBlockEntity) return "P";
-        return "?";
-    }
-    
-    private Color getBlockEntityColor(BlockEntity blockEntity) {
-        if (blockEntity instanceof MobSpawnerBlockEntity) return SPAWNER_COLOR;
-        if (blockEntity instanceof ChestBlockEntity) return CHEST_COLOR;
-        if (blockEntity instanceof ShulkerBoxBlockEntity) return SHULKER_COLOR;
-        if (blockEntity instanceof BeaconBlockEntity) return BEACON_COLOR;
-        if (blockEntity instanceof BarrelBlockEntity) return BARREL_COLOR;
-        if (blockEntity instanceof PistonBlockEntity) return PISTON_COLOR;
-        return TEXT_GRAY;
-    }
-    
-    // Block Entity Counter (right side of radar)
-    private void renderBlockEntityCounter(DrawContext ctx) {
-        int radarSizeVal = (int) radarSize.getValue();
-        int x = 12 + radarSizeVal + 12;
-        int y = getTopLeftHeight() + 12;
-        
-        int padding = 8;
-        int lineHeight = 14;
-        int counterCount = blockEntityCounts.size();
-        
-        if (counterCount == 0) return;
-        
-        int bgHeight = counterCount * lineHeight + padding;
-        int maxWidth = 0;
-        
-        for (Map.Entry<String, Integer> entry : blockEntityCounts.entrySet()) {
-            String text = entry.getKey() + ": " + entry.getValue();
-            int w = TextRenderer.getWidth(text);
-            if (w > maxWidth) maxWidth = w;
-        }
-        
-        int bgWidth = maxWidth + padding * 2;
-        
-        // Background
-        RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
-        
-        // Counter list
-        int textY = y + padding / 2 + 2;
-        for (Map.Entry<String, Integer> entry : blockEntityCounts.entrySet()) {
-            String text = entry.getKey() + ": " + entry.getValue();
-            Color blockColor = getBlockEntityColorByName(entry.getKey());
-            TextRenderer.drawString(text, ctx, x + padding, textY, blockColor.getRGB());
-            textY += lineHeight;
-        }
-    }
-    
-    private Color getBlockEntityColorByName(String name) {
-        switch (name) {
-            case "Spawner": return SPAWNER_COLOR;
-            case "Chest": return CHEST_COLOR;
-            case "Shulker": return SHULKER_COLOR;
-            case "Beacon": return BEACON_COLOR;
-            case "Barrel": return BARREL_COLOR;
-            case "Piston": return PISTON_COLOR;
-            default: return TEXT_GRAY;
         }
     }
 
@@ -522,7 +351,7 @@ public final class HUD extends Module {
         int bgWidth = width + padding * 2;
         int bgHeight = 22;
         int x = 12;
-        int y = getTopLeftHeight() + (int) radarSize.getValue() + 16;
+        int y = getTopLeftHeight() + RADAR_SIZE + 16;
         
         // Background
         RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
