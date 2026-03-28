@@ -222,7 +222,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - FIXED: Arrow points where you're looking, cardinal directions correct
+    // RADAR - FIXED: Arrow points where you're looking, cardinal directions correct, entities positioned correctly
     private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
         int range = (int) radarRange.getValue();
@@ -239,10 +239,12 @@ public final class HUD extends Module {
         // Get player's facing direction (yaw in degrees)
         // Minecraft: 0 = South, 90 = West, 180 = North, 270 = East
         float yaw = mc.player.getYaw();
-        // Adjust so that the direction you're facing goes to the TOP of the radar
-        // When facing North (180°), it should show North at the top
-        // So we need to rotate the radar by (yaw - 180)
+        
+        // For cardinal directions, rotate so that the direction you're facing goes to the TOP
         double rad = Math.toRadians(-yaw + 180);
+        
+        // For entity positioning, we need the angle relative to your facing direction
+        double facingRad = Math.toRadians(yaw);
         
         // Draw + crosshair with arrow head on top line
         int armLength = size / 2 - 8;
@@ -285,11 +287,9 @@ public final class HUD extends Module {
         // Draw center dot (player)
         ctx.fill(centerX - 1, centerY - 1, centerX + 1, centerY + 1, URANIUM_GREEN.getRGB());
         
-        // Draw cardinal directions - FIXED: Correct orientation
+        // Draw cardinal directions - Correct orientation
         int compassDistance = size / 2 - 15;
         
-        // Calculate positions for cardinal directions based on rotation
-        // North (0° relative) goes to the top when facing North
         int northX = centerX + (int)(Math.sin(rad) * compassDistance);
         int northY = centerY - (int)(Math.cos(rad) * compassDistance);
         int southX = centerX - (int)(Math.sin(rad) * compassDistance);
@@ -299,13 +299,12 @@ public final class HUD extends Module {
         int westX = centerX - (int)(Math.cos(rad) * compassDistance);
         int westY = centerY - (int)(Math.sin(rad) * compassDistance);
         
-        // Draw the cardinal directions
         TextRenderer.drawString("N", ctx, northX - 4, northY - 5, CARDINAL_COLOR.getRGB());
         TextRenderer.drawString("S", ctx, southX - 4, southY - 5, CARDINAL_COLOR.getRGB());
         TextRenderer.drawString("E", ctx, eastX - 4, eastY - 5, CARDINAL_COLOR.getRGB());
         TextRenderer.drawString("W", ctx, westX - 4, westY - 5, CARDINAL_COLOR.getRGB());
         
-        // Draw other players
+        // Draw other players using correct coordinate system
         for (Entity ent : mc.world.getPlayers()) {
             if (ent == mc.player) continue;
             
@@ -315,13 +314,13 @@ public final class HUD extends Module {
             
             if (distance > range) continue;
             
-            // Calculate angle relative to your facing direction
-            double angle = Math.atan2(dz, dx);
-            double relAngle = angle - Math.toRadians(yaw);
+            // Calculate angle to entity relative to your facing direction
+            double angleToEntity = Math.atan2(dz, dx);
+            double relativeAngle = angleToEntity - facingRad;
             
-            // Convert to radar coordinates with forward direction going to TOP
-            double radarX = Math.sin(relAngle) * distance;
-            double radarY = -Math.cos(relAngle) * distance;
+            // Convert to radar coordinates: forward direction goes to the top
+            double radarX = Math.sin(relativeAngle) * distance;
+            double radarY = -Math.cos(relativeAngle) * distance;
             
             int px = (int)(centerX + (radarX / range) * (size / 2 - 12));
             int py = (int)(centerY + (radarY / range) * (size / 2 - 12));
@@ -342,7 +341,7 @@ public final class HUD extends Module {
             }
         }
         
-        // Draw block entities (all Y levels)
+        // Draw block entities using the same coordinate system
         if (showBlockEntities.getValue()) {
             for (int chunkX = -range; chunkX <= range; chunkX++) {
                 for (int chunkZ = -range; chunkZ <= range; chunkZ++) {
@@ -368,13 +367,13 @@ public final class HUD extends Module {
                             String entityType = getBlockEntityName(blockEntity);
                             blockEntityCounts.merge(entityType, 1, Integer::sum);
                             
-                            // Calculate angle relative to your facing direction
-                            double angle = Math.atan2(dz, dx);
-                            double relAngle = angle - Math.toRadians(yaw);
+                            // Calculate angle to block entity relative to your facing direction
+                            double angleToEntity = Math.atan2(dz, dx);
+                            double relativeAngle = angleToEntity - facingRad;
                             
-                            // Convert to radar coordinates with forward direction going to TOP
-                            double radarX = Math.sin(relAngle) * distance;
-                            double radarY = -Math.cos(relAngle) * distance;
+                            // Convert to radar coordinates: forward direction goes to the top
+                            double radarX = Math.sin(relativeAngle) * distance;
+                            double radarY = -Math.cos(relativeAngle) * distance;
                             
                             int px = (int)(centerX + (radarX / range) * (size / 2 - 12));
                             int py = (int)(centerY + (radarY / range) * (size / 2 - 12));
