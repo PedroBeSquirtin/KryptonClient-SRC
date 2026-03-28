@@ -237,7 +237,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - Left side (shows player faces)
+    // RADAR - Left side (shows player faces) - FIXED
     private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
         int range = (int) radarRange.getValue();
@@ -272,7 +272,9 @@ public final class HUD extends Module {
             if (px > x + 4 && px < x + size - 4 && py > y + 4 && py < y + size - 4) {
                 // Draw player head
                 PlayerEntity player = (PlayerEntity) ent;
-                Identifier skin = player.getSkinTexture();
+                
+                // Get skin texture - FIXED: use getSkinTextures()
+                Identifier skin = player.getSkinTextures().texture();
                 
                 // Draw circle background
                 RenderUtils.renderCircle(ctx.getMatrices(), new Color(0, 0, 0, 150), px, py, 8, 16);
@@ -412,7 +414,7 @@ public final class HUD extends Module {
         int height = 0;
         if (showWatermark.getValue() || showInfo.getValue()) {
             if (showWatermark.getValue() && showInfo.getValue()) {
-                height = 12 + 10 + 14 + 14 + 10; // y + padding + line1 + line2 + padding
+                height = 12 + 10 + 14 + 14 + 10;
             } else if (showWatermark.getValue() || showInfo.getValue()) {
                 height = 12 + 10 + 14 + 10;
             }
