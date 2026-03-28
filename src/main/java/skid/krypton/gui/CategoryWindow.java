@@ -26,12 +26,20 @@ public final class CategoryWindow {
     public ClickGUI parent;
     private float hoverAnimation;
     
-    // Clean Green Color Scheme
-    private final Color BG_COLOR = new Color(18, 25, 18, 245);
-    private final Color HEADER_COLOR = new Color(25, 35, 25, 255);
-    private final Color ACCENT_GREEN = new Color(100, 220, 100, 255);
-    private final Color HOVER_GREEN = new Color(100, 220, 100, 25);
-    private final Color BORDER_COLOR = new Color(70, 100, 70, 120);
+    // Clean Uranium Green Color Scheme
+    private final Color BG_COLOR = new Color(18, 22, 18, 245);
+    private final Color HEADER_COLOR = new Color(25, 32, 25, 255);
+    private final Color ACCENT_GREEN = new Color(80, 200, 80, 255);
+    private final Color HOVER_GREEN = new Color(80, 200, 80, 20);
+    private final Color BORDER_COLOR = new Color(65, 95, 65, 120);
+    
+    // Icons for categories
+    private final String COMBAT_ICON = "⚔";
+    private final String MOVEMENT_ICON = "🏃";
+    private final String PLAYER_ICON = "👤";
+    private final String RENDER_ICON = "👁";
+    private final String WORLD_ICON = "🌍";
+    private final String CLIENT_ICON = "⚙";
 
     public CategoryWindow(final int x, final int y, final int width, final int height, final Category category, final ClickGUI parent) {
         this.moduleButtons = new ArrayList<>();
@@ -63,10 +71,10 @@ public final class CategoryWindow {
     public void render(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
         try {
             int targetAlpha = skid.krypton.module.modules.client.Krypton.windowAlpha.getIntValue();
-            Color targetColor = new Color(18, 25, 18, targetAlpha);
+            Color targetColor = new Color(18, 22, 18, targetAlpha);
             
             if (this.currentColor == null) {
-                this.currentColor = new Color(18, 25, 18, 0);
+                this.currentColor = new Color(18, 22, 18, 0);
             } else {
                 this.currentColor = ColorUtil.a(0.05f, targetColor, this.currentColor);
             }
@@ -74,24 +82,35 @@ public final class CategoryWindow {
             float hoverTarget = this.isHovered(mouseX, mouseY) ? 1.0F : 0.0F;
             this.hoverAnimation = (float) MathUtil.approachValue(delta * 0.1f, this.hoverAnimation, hoverTarget);
             
-            Color panelBg = ColorUtil.a(BG_COLOR, HOVER_GREEN, this.hoverAnimation);
-            float topRadius = 10.0F;
-            float bottomRadius = this.extended ? 0.0F : 10.0F;
+            renderShadow(context, this.x, this.y, this.width, this.height);
             
+            Color panelBg = ColorUtil.a(BG_COLOR, HOVER_GREEN, this.hoverAnimation);
+            float topRadius = 12.0F;
+            float bottomRadius = this.extended ? 0.0F : 12.0F;
+            
+            // Main panel
             RenderUtils.renderRoundedQuad(context.getMatrices(), panelBg, 
                 this.x, this.y, this.x + this.width, this.y + this.height, 
                 topRadius, topRadius, bottomRadius, bottomRadius, 50.0);
             
-            context.fill(this.x, this.y, this.x + this.width, this.y + 32, HEADER_COLOR.getRGB());
+            // Header with gradient
+            drawHeaderGradient(context, this.x, this.y, this.width, 32);
             
+            // Icon and category name
+            String icon = getCategoryIcon(this.category);
             String categoryName = this.category.name.toString();
-            int textX = this.x + (this.width - getTextWidth(categoryName)) / 2;
-            int textY = this.y + 11;
+            String fullText = icon + " " + categoryName;
             
-            drawText(context, categoryName, textX, textY, ACCENT_GREEN.getRGB());
+            int textX = this.x + (this.width - getTextWidth(fullText)) / 2;
+            int textY = this.y + 10;
             
+            // Draw with green accent
+            drawText(context, fullText, textX, textY, ACCENT_GREEN.getRGB());
+            
+            // Bottom accent line
             context.fill(this.x, this.y + 31, this.x + this.width, this.y + 32, ACCENT_GREEN.getRGB());
             
+            // Border
             RenderUtils.renderRoundedQuad(context.getMatrices(), BORDER_COLOR,
                 this.x, this.y, this.x + this.width, this.y + this.height,
                 topRadius, topRadius, bottomRadius, bottomRadius, 30.0);
@@ -103,6 +122,16 @@ public final class CategoryWindow {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+    
+    private void drawHeaderGradient(DrawContext context, int x, int y, int width, int height) {
+        for (int i = 0; i < height; i++) {
+            float ratio = (float) i / height;
+            int r = (int)(25 + (28 - 25) * ratio);
+            int g = (int)(32 + (38 - 32) * ratio);
+            int b = (int)(25 + (28 - 25) * ratio);
+            context.fill(x, y + i, x + width, y + i + 1, new Color(r, g, b).getRGB());
         }
     }
     
@@ -119,6 +148,27 @@ public final class CategoryWindow {
             TextRenderer.drawString(text, context, x, y, color);
         } catch (Exception e) {
             context.drawText(MinecraftClient.getInstance().textRenderer, text, x, y, color, false);
+        }
+    }
+    
+    private String getCategoryIcon(Category category) {
+        if (category == null || category.name == null) return "?";
+        String name = category.name.toString().toLowerCase();
+        switch (name) {
+            case "combat": return COMBAT_ICON;
+            case "movement": return MOVEMENT_ICON;
+            case "player": return PLAYER_ICON;
+            case "render": return RENDER_ICON;
+            case "world": return WORLD_ICON;
+            case "client": return CLIENT_ICON;
+            default: return "?";
+        }
+    }
+    
+    private void renderShadow(DrawContext context, int x, int y, int width, int height) {
+        for (int i = 1; i <= 4; i++) {
+            int alpha = 15 - i * 3;
+            context.fill(x - i, y - i, x + width + i, y + height + i, new Color(0, 0, 0, Math.max(0, alpha)).getRGB());
         }
     }
 
