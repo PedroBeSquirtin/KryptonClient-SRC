@@ -127,10 +127,9 @@ public final class ModuleButton {
             if (this.isHovered(mouseX, mouseY)) {
                 CharSequence description = this.module.getDescription();
                 if (description != null && description.length() > 0 && Krypton.INSTANCE.GUI != null) {
-                    // Center the tooltip text
                     int textWidth = getTextWidth(description.toString());
-                    int tooltipX = mouseX + 15 - (textWidth / 2);
-                    Krypton.INSTANCE.GUI.setTooltip(description, tooltipX, mouseY + 15);
+                    int tooltipX = mouseX + 10 - (textWidth / 2);
+                    Krypton.INSTANCE.GUI.setTooltip(description, tooltipX, mouseY + 20);
                 }
             }
         } catch (Exception e) {
@@ -175,9 +174,9 @@ public final class ModuleButton {
     private void renderModuleInfo(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
         if (this.module == null) return;
         
-        // Module name
+        // Module name - centered vertically
         String moduleName = this.module.getName() != null ? this.module.getName().toString() : "";
-        int textY = y + height / 2 - 4;
+        int textY = y + (height - 8) / 2;
         drawText(drawContext, moduleName, x + 12, textY, TEXT_WHITE.getRGB());
         
         // ON/OFF Button
@@ -193,7 +192,7 @@ public final class ModuleButton {
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), buttonBg,
             buttonX, buttonY, buttonX + buttonWidth, buttonY + buttonHeight, 11, 11, 11, 11, 30);
         
-        // Button text - centered
+        // Button text - perfectly centered horizontally and vertically
         String buttonText = isEnabled ? "ON" : "OFF";
         int textWidth = getTextWidth(buttonText);
         int textXPos = buttonX + (buttonWidth - textWidth) / 2;
