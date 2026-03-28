@@ -22,7 +22,7 @@ public final class ClickGUI extends Screen {
     private int tooltipY;
     
     private final Color DESCRIPTION_BG = new Color(20, 28, 20, 245);
-    private final Color ACCENT_GREEN = new Color(120, 255, 120, 255);
+    private final Color ACCENT_GREEN = new Color(100, 220, 100, 255);
     
     private static final int WINDOW_START_X = 50;
     private static final int WINDOW_START_Y = 40;
@@ -121,21 +121,18 @@ public final class ClickGUI extends Screen {
             }
             
             int tooltipX = x - 8;
-            int tooltipY = y - 5;
+            int tooltipY = y - 6;
             int tooltipWidth = textWidth + 20;
             int tooltipHeight = 24;
             
-            // Background
             RenderUtils.renderRoundedQuad(context.getMatrices(), DESCRIPTION_BG,
                 tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight,
                 8, 8, 8, 8, 50);
             
-            // Border
-            RenderUtils.renderRoundedQuad(context.getMatrices(), new Color(120, 255, 120, 80),
+            RenderUtils.renderRoundedQuad(context.getMatrices(), new Color(100, 220, 100, 80),
                 tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight,
                 8, 8, 8, 8, 30);
             
-            // Text - perfectly centered vertically in the bubble
             int textYPos = tooltipY + (tooltipHeight - 8) / 2;
             TextRenderer.drawString(text, context, x, textYPos, new Color(255, 255, 255, 255).getRGB());
         } catch (Exception e) {
