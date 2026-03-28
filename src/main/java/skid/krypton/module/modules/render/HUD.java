@@ -155,15 +155,15 @@ public final class HUD extends Module {
         }
     }
 
-    // POTIONS - Fixed for 1.21 (no RegistryEntry needed)
+    // POTIONS - FIXED: Use .value() to get the actual StatusEffect
     private void renderPotions(DrawContext ctx) {
         int x = 5;
         int y = 145;
         int offset = 0;
 
         for (StatusEffectInstance effect : mc.player.getStatusEffects()) {
-            // Get potion name directly - works in 1.21
-            String effectName = effect.getEffectType().getName().getString();
+            // Get potion name - need to call .value() first to get the StatusEffect
+            String effectName = effect.getEffectType().value().getName().getString();
             
             String text = effectName + " " + (effect.getDuration() / 20) + "s";
             int width = TextRenderer.getWidth(text);
@@ -228,7 +228,10 @@ public final class HUD extends Module {
         List<Module> modules = Krypton.INSTANCE.getModuleManager().b();
         List<Module> sorted = new ArrayList<>(modules);
 
-        switch (moduleSortingMode.getValue()) {
+        // Cast the enum value to ModuleListSorting
+        ModuleListSorting mode = (ModuleListSorting) moduleSortingMode.getValue();
+
+        switch (mode) {
             case LENGTH:
                 sorted.sort((a, b) -> Integer.compare(b.getName().length(), a.getName().length()));
                 break;
