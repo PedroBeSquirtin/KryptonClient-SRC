@@ -9,7 +9,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.chunk.WorldChunk;
 import skid.krypton.Krypton;
 import skid.krypton.event.EventListener;
 import skid.krypton.event.events.Render2DEvent;
@@ -297,28 +298,32 @@ public final class HUD extends Module {
             }
         }
         
-        // Draw block entities (spawners, chests, etc.)
+        // Draw block entities (spawners, chests, etc.) - FIXED: iterate through loaded chunks
         if (showBlockEntities.getValue()) {
-            for (BlockEntity blockEntity : mc.world.blockEntities) {
-                BlockPos pos = blockEntity.getPos();
-                double dx = pos.getX() + 0.5 - mc.player.getX();
-                double dz = pos.getZ() + 0.5 - mc.player.getZ();
-                double distance = Math.sqrt(dx * dx + dz * dz);
-                
-                if (distance > range) continue;
-                
-                double angle = Math.atan2(dz, dx);
-                double relAngle = angle - rad;
-                double rotatedX = Math.cos(relAngle) * distance;
-                double rotatedZ = Math.sin(relAngle) * distance;
-                
-                int px = (int)(centerX + (rotatedX / range) * (size / 2 - 12));
-                int py = (int)(centerY + (rotatedZ / range) * (size / 2 - 12));
-                
-                if (px > x + 4 && px < x + size - 4 && py > y + 4 && py < y + size - 4) {
-                    Color blockColor = getBlockEntityColor(blockEntity);
-                    if (blockColor != null) {
-                        RenderUtils.renderCircle(ctx.getMatrices(), blockColor, px, py, 2, 10);
+            for (WorldChunk chunk : mc.world.getChunkManager().getLoadedChunks()) {
+                for (BlockPos pos : chunk.getBlockEntityPositions()) {
+                    BlockEntity blockEntity = mc.world.getBlockEntity(pos);
+                    if (blockEntity == null) continue;
+                    
+                    double dx = pos.getX() + 0.5 - mc.player.getX();
+                    double dz = pos.getZ() + 0.5 - mc.player.getZ();
+                    double distance = Math.sqrt(dx * dx + dz * dz);
+                    
+                    if (distance > range) continue;
+                    
+                    double angle = Math.atan2(dz, dx);
+                    double relAngle = angle - rad;
+                    double rotatedX = Math.cos(relAngle) * distance;
+                    double rotatedZ = Math.sin(relAngle) * distance;
+                    
+                    int px = (int)(centerX + (rotatedX / range) * (size / 2 - 12));
+                    int py = (int)(centerY + (rotatedZ / range) * (size / 2 - 12));
+                    
+                    if (px > x + 4 && px < x + size - 4 && py > y + 4 && py < y + size - 4) {
+                        Color blockColor = getBlockEntityColor(blockEntity);
+                        if (blockColor != null) {
+                            RenderUtils.renderCircle(ctx.getMatrices(), blockColor, px, py, 2, 10);
+                        }
                     }
                 }
             }
