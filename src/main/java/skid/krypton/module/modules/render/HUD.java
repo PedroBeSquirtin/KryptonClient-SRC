@@ -244,6 +244,7 @@ public final class HUD extends Module {
         double rad = Math.toRadians(-yaw + 180);
         
         // For entity positioning, we need the angle relative to your facing direction
+        // The forward direction (where you're looking) should map to the top of the radar
         double facingRad = Math.toRadians(yaw);
         
         // Draw + crosshair with arrow head on top line
@@ -304,7 +305,8 @@ public final class HUD extends Module {
         TextRenderer.drawString("E", ctx, eastX - 4, eastY - 5, CARDINAL_COLOR.getRGB());
         TextRenderer.drawString("W", ctx, westX - 4, westY - 5, CARDINAL_COLOR.getRGB());
         
-        // Draw other players using correct coordinate system
+        // Helper function to draw entities on radar
+        // Draw other players
         for (Entity ent : mc.world.getPlayers()) {
             if (ent == mc.player) continue;
             
@@ -314,11 +316,13 @@ public final class HUD extends Module {
             
             if (distance > range) continue;
             
-            // Calculate angle to entity relative to your facing direction
+            // Calculate the angle from player to entity
             double angleToEntity = Math.atan2(dz, dx);
+            // Calculate angle relative to facing direction
             double relativeAngle = angleToEntity - facingRad;
             
             // Convert to radar coordinates: forward direction goes to the top
+            // Since forward is where you're looking, it should be negative Y in radar space
             double radarX = Math.sin(relativeAngle) * distance;
             double radarY = -Math.cos(relativeAngle) * distance;
             
@@ -367,8 +371,9 @@ public final class HUD extends Module {
                             String entityType = getBlockEntityName(blockEntity);
                             blockEntityCounts.merge(entityType, 1, Integer::sum);
                             
-                            // Calculate angle to block entity relative to your facing direction
+                            // Calculate the angle to the block entity
                             double angleToEntity = Math.atan2(dz, dx);
+                            // Calculate angle relative to facing direction
                             double relativeAngle = angleToEntity - facingRad;
                             
                             // Convert to radar coordinates: forward direction goes to the top
