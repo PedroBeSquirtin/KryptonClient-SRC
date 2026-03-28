@@ -2,6 +2,8 @@ package skid.krypton.module.modules.render;
 
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import skid.krypton.event.EventListener;
+import skid.krypton.event.events.TickEvent;
 import skid.krypton.module.Category;
 import skid.krypton.module.Module;
 import skid.krypton.module.setting.BooleanSetting;
@@ -79,8 +81,8 @@ public final class Fullbright extends Module {
         }
     }
     
-    // No @Override here - this is a custom update method called from somewhere else
-    public void onUpdate() {
+    @EventListener
+    public void onTick(TickEvent event) {
         if (!isEnabled()) return;
         
         if (mode.getValue() == BrightnessMode.GAMMA) {
@@ -107,15 +109,5 @@ public final class Fullbright extends Module {
                 nightVisionActive = true;
             }
         }
-    }
-    
-    // Helper method to get current brightness
-    public double getCurrentBrightness() {
-        if (mode.getValue() == BrightnessMode.GAMMA) {
-            return mc.options.getGamma().getValue();
-        } else if (mode.getValue() == BrightnessMode.NIGHT_VISION) {
-            return mc.player != null && mc.player.hasStatusEffect(StatusEffects.NIGHT_VISION) ? 1.0 : 0.0;
-        }
-        return 0.0;
     }
 }
