@@ -13,7 +13,6 @@ import skid.krypton.event.EventListener;
 import skid.krypton.event.events.Render3DEvent;
 import skid.krypton.module.Category;
 import skid.krypton.module.Module;
-import skid.krypton.module.setting.BooleanSetting;
 import skid.krypton.module.setting.NumberSetting;
 import skid.krypton.utils.BlockUtil;
 import skid.krypton.utils.EncryptedString;
@@ -25,32 +24,17 @@ import java.util.List;
 
 public final class BlockESP extends Module {
 
-    private static class BlockSettings {
-        BooleanSetting enabled;
-        BooleanSetting tracer;
-        NumberSetting red, green, blue, alpha;
+    // 🔥 GLOBAL ALPHA
+    private final NumberSetting alpha =
+            new NumberSetting(EncryptedString.of("Alpha"), 0, 255, 120, 1);
 
-        BlockSettings(String name) {
-            enabled = new BooleanSetting(EncryptedString.of(name + " Enabled"), false);
-            tracer = new BooleanSetting(EncryptedString.of(name + " Tracer"), false);
+    // 🔥 SELECTED BLOCKS
+    private final Set<Block> selectedBlocks = new HashSet<>();
 
-            red = new NumberSetting(EncryptedString.of(name + " Red"), 0, 255, 255, 1);
-            green = new NumberSetting(EncryptedString.of(name + " Green"), 0, 255, 255, 1);
-            blue = new NumberSetting(EncryptedString.of(name + " Blue"), 0, 255, 255, 1);
-            alpha = new NumberSetting(EncryptedString.of(name + " Alpha"), 0, 255, 120, 1);
-        }
+    // 🔥 PER BLOCK DATA (color + tracer)
+    private final Map<Block, BlockData> blockDataMap = new HashMap<>();
 
-        Color getColor() {
-            return new Color(
-                    red.getIntValue(),
-                    green.getIntValue(),
-                    blue.getIntValue(),
-                    alpha.getIntValue()
-            );
-        }
-    }
-
-    private final Map<Block, BlockSettings> blockSettings = new HashMap<>();
+    // 🔥 CACHE
     private final Map<Block, List<BlockPos>> blockCache = new HashMap<>();
 
     private long lastScan = 0;
@@ -58,31 +42,55 @@ public final class BlockESP extends Module {
     public BlockESP() {
         super(
                 EncryptedString.of("Block ESP"),
-                EncryptedString.of("Fast selected block ESP"),
+                EncryptedString.of("Clean block selection ESP"),
                 -1,
                 Category.RENDER
         );
 
+        this.addSettings(alpha);
+
+        // init all blocks
         for (Block block : Registries.BLOCK) {
-            String name = block.getName().getString();
-
-            BlockSettings settings = new BlockSettings(name);
-            blockSettings.put(block, settings);
+            blockDataMap.put(block, new BlockData());
             blockCache.put(block, new ArrayList<>());
-
-            this.addSettings(
-                    settings.enabled,
-                    settings.tracer,
-                    settings.red,
-                    settings.green,
-                    settings.blue,
-                    settings.alpha
-            );
         }
+    }
+
+    // 🔥 BLOCK DATA (PER BLOCK SETTINGS)
+    public static class BlockData {
+        public int r = 255, g = 255, b = 255;
+        public boolean tracer = false;
+
+        public Color getColor(int alpha) {
+            return new Color(r, g, b, alpha);
+        }
+    }
+
+    // 🔥 CALLED FROM YOUR GUI
+    public void toggleBlock(Block block) {
+        if (selectedBlocks.contains(block)) {
+            selectedBlocks.remove(block);
+        } else {
+            selectedBlocks.add(block);
+        }
+    }
+
+    public Set<Block> getSelectedBlocks() {
+        return selectedBlocks;
+    }
+
+    public BlockData getBlockData(Block block) {
+        return blockDataMap.get(block);
+    }
+
+    // 🔥 DISPLAY TEXT: "Blocks: X Blocks"
+    public String getBlockCountText() {
+        return "Blocks: " + selectedBlocks.size() + " Blocks";
     }
 
     @EventListener
     public void onRender3D(Render3DEvent event) {
+
         if (System.currentTimeMillis() - lastScan > 500) {
             scanBlocks();
             lastScan = System.currentTimeMillis();
@@ -91,9 +99,12 @@ public final class BlockESP extends Module {
         renderBlocks(event);
     }
 
+    // 🔥 ONLY SCAN SELECTED BLOCKS
     private void scanBlocks() {
 
         blockCache.values().forEach(List::clear);
+
+        if (selectedBlocks.isEmpty()) return;
 
         for (WorldChunk chunk : BlockUtil.getLoadedChunks().toList()) {
 
@@ -108,8 +119,7 @@ public final class BlockESP extends Module {
                 BlockState state = mc.world.getBlockState(pos);
                 Block block = state.getBlock();
 
-                BlockSettings settings = blockSettings.get(block);
-                if (settings == null || !settings.enabled.getValue()) continue;
+                if (!selectedBlocks.contains(block)) continue;
 
                 blockCache.get(block).add(pos.toImmutable());
             }
@@ -129,16 +139,15 @@ public final class BlockESP extends Module {
             matrices.translate(-camPos.x, -camPos.y, -camPos.z);
         }
 
-        for (Map.Entry<Block, List<BlockPos>> entry : blockCache.entrySet()) {
+        for (Block block : selectedBlocks) {
 
-            Block block = entry.getKey();
-            BlockSettings settings = blockSettings.get(block);
+            List<BlockPos> positions = blockCache.get(block);
+            if (positions == null) continue;
 
-            if (settings == null || !settings.enabled.getValue()) continue;
+            BlockData data = blockDataMap.get(block);
+            Color color = data.getColor(alpha.getIntValue());
 
-            Color color = settings.getColor();
-
-            for (BlockPos pos : entry.getValue()) {
+            for (BlockPos pos : positions) {
 
                 if (mc.player.getPos().distanceTo(Vec3d.ofCenter(pos)) > 64) continue;
 
@@ -153,7 +162,7 @@ public final class BlockESP extends Module {
                         color
                 );
 
-                if (settings.tracer.getValue() && mc.crosshairTarget != null) {
+                if (data.tracer && mc.crosshairTarget != null) {
                     RenderUtils.renderLine(
                             event.matrixStack,
                             new Color(color.getRed(), color.getGreen(), color.getBlue(), 255),
