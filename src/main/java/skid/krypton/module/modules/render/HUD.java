@@ -4,7 +4,6 @@ import net.minecraft.block.entity.*;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.WorldChunk;
@@ -39,12 +38,10 @@ public final class HUD extends Module {
     // Block Entity Colors
     private static final Color SPAWNER_COLOR = new Color(200, 80, 200, 200);
     private static final Color CHEST_COLOR = new Color(200, 150, 80, 200);
-    private static final Color ENDER_CHEST_COLOR = new Color(100, 80, 200, 200);
     private static final Color SHULKER_COLOR = new Color(150, 80, 200, 200);
-    private static final Color FURNACE_COLOR = new Color(100, 100, 100, 200);
     private static final Color BEACON_COLOR = new Color(80, 200, 200, 200);
-    private static final Color ENCHANT_TABLE_COLOR = new Color(100, 100, 255, 200);
     private static final Color BARREL_COLOR = new Color(200, 120, 80, 200);
+    private static final Color PISTON_COLOR = new Color(100, 200, 100, 200);
 
     // SETTINGS
     private final BooleanSetting showWatermark = new BooleanSetting("Watermark", true);
@@ -53,7 +50,6 @@ public final class HUD extends Module {
     private final BooleanSetting showTime = new BooleanSetting("Time", true);
     private final BooleanSetting showCoordinates = new BooleanSetting("Coordinates", true);
     private final BooleanSetting showRadar = new BooleanSetting("Radar", true);
-    private final BooleanSetting showPotions = new BooleanSetting("Potions", true);
     private final BooleanSetting showBlockEntities = new BooleanSetting("Show Block Entities", true);
     private final NumberSetting radarSize = new NumberSetting("Radar Size", 100, 250, 180, 5);
     private final NumberSetting radarRange = new NumberSetting("Radar Range", 10, 80, 40, 5);
@@ -69,7 +65,7 @@ public final class HUD extends Module {
 
         this.addSettings(
                 showWatermark, showInfo, showModules, showTime, showCoordinates,
-                showRadar, radarSize, radarRange, showPotions, showBlockEntities, moduleSortingMode
+                showRadar, radarSize, radarRange, showBlockEntities, moduleSortingMode
         );
     }
 
@@ -85,7 +81,7 @@ public final class HUD extends Module {
             // Reset block entity counts
             blockEntityCounts.clear();
 
-            // TOP RIGHT - Modules
+            // TOP RIGHT - Modules (moved down to avoid potion icons)
             if (showModules.getValue()) {
                 renderModules(ctx, w, h);
             }
@@ -114,22 +110,17 @@ public final class HUD extends Module {
             if (showCoordinates.getValue()) {
                 renderCoordinates(ctx);
             }
-            
-            // LEFT SIDE - Potions (below coordinates)
-            if (showPotions.getValue()) {
-                renderPotions(ctx);
-            }
 
             RenderUtils.scaledProjection();
         }
     }
 
-    // TOP RIGHT - Enabled Modules
+    // TOP RIGHT - Enabled Modules (moved down more)
     private void renderModules(DrawContext ctx, int screenWidth, int screenHeight) {
         List<Module> list = getSortedModules();
         int padding = 12;
         int lineHeight = 16;
-        int y = 12;
+        int y = 35; // Moved down from 12 to 35
         int moduleCount = 0;
         
         for (Module m : list) {
@@ -231,7 +222,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - Static + that reaches edges, rotating N E S W
+    // RADAR - Center is player, facing direction is top of radar
     private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
         int range = (int) radarRange.getValue();
@@ -241,47 +232,48 @@ public final class HUD extends Module {
         // Background
         RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + size, y + size, 8, 8, 8, 8, 50);
         
-        // Center of radar
+        // Center of radar (player position)
         int centerX = x + size / 2;
         int centerY = y + size / 2;
         
-        // Get player's facing direction
+        // Get player's facing direction - this will be the TOP of the radar
         float yaw = mc.player.getYaw();
         double rad = Math.toRadians(yaw);
         
-        // Draw thin + crosshair that reaches the LAST circle (not the border)
+        // Draw + crosshair - centered on player
         int armLength = size / 2 - 6;
         
-        // Draw thin horizontal line (left-right) - 1 pixel thick
+        // Draw thin horizontal line (left-right)
         for (int i = -armLength; i <= armLength; i++) {
             ctx.fill(centerX + i, centerY, centerX + i + 1, centerY + 1, CROSSHAIR_COLOR.getRGB());
         }
         
-        // Draw thin vertical line (up-down) - 1 pixel thick
+        // Draw thin vertical line (up-down)
         for (int i = -armLength; i <= armLength; i++) {
             ctx.fill(centerX, centerY + i, centerX + 1, centerY + i + 1, CROSSHAIR_COLOR.getRGB());
         }
         
-        // Draw center dot
+        // Draw center dot (player)
         ctx.fill(centerX - 1, centerY - 1, centerX + 1, centerY + 1, URANIUM_GREEN.getRGB());
         
-        // Draw rotating cardinal directions (N, E, S, W)
+        // Draw cardinal directions - rotated so facing direction is TOP
+        // North is always forward (where you're looking)
         int compassDistance = size / 2 - 15;
-        int northX = centerX + (int)(Math.cos(rad) * compassDistance);
-        int northY = centerY - (int)(Math.sin(rad) * compassDistance);
-        int southX = centerX - (int)(Math.cos(rad) * compassDistance);
-        int southY = centerY + (int)(Math.sin(rad) * compassDistance);
-        int eastX = centerX + (int)(Math.sin(rad) * compassDistance);
-        int eastY = centerY + (int)(Math.cos(rad) * compassDistance);
-        int westX = centerX - (int)(Math.sin(rad) * compassDistance);
-        int westY = centerY - (int)(Math.cos(rad) * compassDistance);
+        int northX = centerX;
+        int northY = centerY - compassDistance;
+        int southX = centerX;
+        int southY = centerY + compassDistance;
+        int eastX = centerX + compassDistance;
+        int eastY = centerY;
+        int westX = centerX - compassDistance;
+        int westY = centerY;
         
         TextRenderer.drawString("N", ctx, northX - 4, northY - 5, CARDINAL_COLOR.getRGB());
         TextRenderer.drawString("S", ctx, southX - 4, southY - 5, CARDINAL_COLOR.getRGB());
         TextRenderer.drawString("E", ctx, eastX - 4, eastY - 5, CARDINAL_COLOR.getRGB());
         TextRenderer.drawString("W", ctx, westX - 4, westY - 5, CARDINAL_COLOR.getRGB());
         
-        // Draw other players
+        // Draw other players - rotated so facing direction is TOP
         for (Entity ent : mc.world.getPlayers()) {
             if (ent == mc.player) continue;
             
@@ -291,10 +283,11 @@ public final class HUD extends Module {
             
             if (distance > range) continue;
             
+            // Rotate coordinates based on player facing direction
             double angle = Math.atan2(dz, dx);
             double relAngle = angle - rad;
-            double rotatedX = Math.cos(relAngle) * distance;
-            double rotatedZ = Math.sin(relAngle) * distance;
+            double rotatedX = Math.sin(relAngle) * distance;
+            double rotatedZ = Math.cos(relAngle) * distance;
             
             int px = (int)(centerX + (rotatedX / range) * (size / 2 - 12));
             int py = (int)(centerY + (rotatedZ / range) * (size / 2 - 12));
@@ -315,7 +308,7 @@ public final class HUD extends Module {
             }
         }
         
-        // Draw block entities with their icons and count them
+        // Draw block entities (only spawners, chests, shulkers, beacons, barrels, pistons)
         if (showBlockEntities.getValue()) {
             for (int chunkX = -range; chunkX <= range; chunkX++) {
                 for (int chunkZ = -range; chunkZ <= range; chunkZ++) {
@@ -324,6 +317,9 @@ public final class HUD extends Module {
                         for (BlockPos pos : chunk.getBlockEntityPositions()) {
                             BlockEntity blockEntity = mc.world.getBlockEntity(pos);
                             if (blockEntity == null) continue;
+                            
+                            // Only show specific block types
+                            if (!shouldShowBlockEntity(blockEntity)) continue;
                             
                             double dx = pos.getX() + 0.5 - mc.player.getX();
                             double dz = pos.getZ() + 0.5 - mc.player.getZ();
@@ -335,10 +331,11 @@ public final class HUD extends Module {
                             String entityType = getBlockEntityName(blockEntity);
                             blockEntityCounts.merge(entityType, 1, Integer::sum);
                             
+                            // Rotate coordinates based on player facing direction
                             double angle = Math.atan2(dz, dx);
                             double relAngle = angle - rad;
-                            double rotatedX = Math.cos(relAngle) * distance;
-                            double rotatedZ = Math.sin(relAngle) * distance;
+                            double rotatedX = Math.sin(relAngle) * distance;
+                            double rotatedZ = Math.cos(relAngle) * distance;
                             
                             int px = (int)(centerX + (rotatedX / range) * (size / 2 - 12));
                             int py = (int)(centerY + (rotatedZ / range) * (size / 2 - 12));
@@ -372,39 +369,42 @@ public final class HUD extends Module {
         }
     }
     
+    private boolean shouldShowBlockEntity(BlockEntity blockEntity) {
+        return blockEntity instanceof MobSpawnerBlockEntity ||
+               blockEntity instanceof ChestBlockEntity ||
+               blockEntity instanceof ShulkerBoxBlockEntity ||
+               blockEntity instanceof BeaconBlockEntity ||
+               blockEntity instanceof BarrelBlockEntity ||
+               blockEntity instanceof PistonBlockEntity;
+    }
+    
     private String getBlockEntityName(BlockEntity blockEntity) {
         if (blockEntity instanceof MobSpawnerBlockEntity) return "Spawner";
         if (blockEntity instanceof ChestBlockEntity) return "Chest";
-        if (blockEntity instanceof EnderChestBlockEntity) return "Ender Chest";
         if (blockEntity instanceof ShulkerBoxBlockEntity) return "Shulker";
-        if (blockEntity instanceof FurnaceBlockEntity) return "Furnace";
         if (blockEntity instanceof BeaconBlockEntity) return "Beacon";
-        if (blockEntity instanceof EnchantingTableBlockEntity) return "Enchant";
         if (blockEntity instanceof BarrelBlockEntity) return "Barrel";
+        if (blockEntity instanceof PistonBlockEntity) return "Piston";
         return "Block";
     }
     
     private String getBlockEntityIcon(BlockEntity blockEntity) {
         if (blockEntity instanceof MobSpawnerBlockEntity) return "S";
         if (blockEntity instanceof ChestBlockEntity) return "C";
-        if (blockEntity instanceof EnderChestBlockEntity) return "E";
         if (blockEntity instanceof ShulkerBoxBlockEntity) return "B";
-        if (blockEntity instanceof FurnaceBlockEntity) return "F";
         if (blockEntity instanceof BeaconBlockEntity) return "B";
-        if (blockEntity instanceof EnchantingTableBlockEntity) return "T";
         if (blockEntity instanceof BarrelBlockEntity) return "R";
+        if (blockEntity instanceof PistonBlockEntity) return "P";
         return "?";
     }
     
     private Color getBlockEntityColor(BlockEntity blockEntity) {
         if (blockEntity instanceof MobSpawnerBlockEntity) return SPAWNER_COLOR;
         if (blockEntity instanceof ChestBlockEntity) return CHEST_COLOR;
-        if (blockEntity instanceof EnderChestBlockEntity) return ENDER_CHEST_COLOR;
         if (blockEntity instanceof ShulkerBoxBlockEntity) return SHULKER_COLOR;
-        if (blockEntity instanceof FurnaceBlockEntity) return FURNACE_COLOR;
         if (blockEntity instanceof BeaconBlockEntity) return BEACON_COLOR;
-        if (blockEntity instanceof EnchantingTableBlockEntity) return ENCHANT_TABLE_COLOR;
         if (blockEntity instanceof BarrelBlockEntity) return BARREL_COLOR;
+        if (blockEntity instanceof PistonBlockEntity) return PISTON_COLOR;
         return TEXT_GRAY;
     }
     
@@ -448,12 +448,10 @@ public final class HUD extends Module {
         switch (name) {
             case "Spawner": return SPAWNER_COLOR;
             case "Chest": return CHEST_COLOR;
-            case "Ender Chest": return ENDER_CHEST_COLOR;
             case "Shulker": return SHULKER_COLOR;
-            case "Furnace": return FURNACE_COLOR;
             case "Beacon": return BEACON_COLOR;
-            case "Enchant": return ENCHANT_TABLE_COLOR;
             case "Barrel": return BARREL_COLOR;
+            case "Piston": return PISTON_COLOR;
             default: return TEXT_GRAY;
         }
     }
@@ -475,101 +473,6 @@ public final class HUD extends Module {
         
         // Text
         TextRenderer.drawString(coords, ctx, x + padding, y + 6, TEXT_GRAY.getRGB());
-    }
-
-    // Potions
-    private void renderPotions(DrawContext ctx) {
-        List<StatusEffectInstance> effects = new ArrayList<>(mc.player.getStatusEffects());
-        if (effects.isEmpty()) return;
-        
-        int padding = 10;
-        int lineHeight = 18;
-        int x = 12;
-        int y = getTopLeftHeight() + (int) radarSize.getValue() + 16 + 32;
-        
-        int potionCount = effects.size();
-        int bgHeight = potionCount * lineHeight + padding;
-        int maxWidth = 0;
-        
-        for (StatusEffectInstance effect : effects) {
-            int durationSeconds = effect.getDuration() / 20;
-            String text = formatPotionName(effect) + " " + formatDuration(durationSeconds);
-            int w = TextRenderer.getWidth(text);
-            if (w > maxWidth) maxWidth = w;
-        }
-        
-        int bgWidth = maxWidth + padding * 2;
-        
-        // Background
-        RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
-        
-        // Potion list with colored dots
-        int textY = y + padding / 2 + 2;
-        for (StatusEffectInstance effect : effects) {
-            int durationSeconds = effect.getDuration() / 20;
-            String text = formatPotionName(effect) + " " + formatDuration(durationSeconds);
-            
-            // Draw colored dot
-            RenderUtils.renderCircle(ctx.getMatrices(), getPotionColor(effect), x + padding + 4, textY + 5, 4, 12);
-            
-            // Draw text
-            TextRenderer.drawString(text, ctx, x + padding + 12, textY, TEXT_GRAY.getRGB());
-            textY += lineHeight;
-        }
-    }
-    
-    private String formatDuration(int seconds) {
-        if (seconds >= 3600) {
-            int hours = seconds / 3600;
-            int minutes = (seconds % 3600) / 60;
-            return hours + "h " + minutes + "m";
-        } else if (seconds >= 60) {
-            int minutes = seconds / 60;
-            int remainingSeconds = seconds % 60;
-            return minutes + "m " + remainingSeconds + "s";
-        } else {
-            return seconds + "s";
-        }
-    }
-
-    private String formatPotionName(StatusEffectInstance effect) {
-        String name = effect.getEffectType().value().getName().getString();
-        int amplifier = effect.getAmplifier();
-        if (amplifier > 0) {
-            String roman = getRomanNumeral(amplifier + 1);
-            name = name + " " + roman;
-        }
-        return name;
-    }
-
-    private String getRomanNumeral(int num) {
-        switch (num) {
-            case 1: return "I";
-            case 2: return "II";
-            case 3: return "III";
-            case 4: return "IV";
-            case 5: return "V";
-            default: return String.valueOf(num);
-        }
-    }
-
-    private Color getPotionColor(StatusEffectInstance effect) {
-        String name = effect.getEffectType().value().getName().getString().toLowerCase();
-        if (name.contains("speed")) return new Color(100, 200, 255, 200);
-        if (name.contains("slowness")) return new Color(100, 100, 150, 200);
-        if (name.contains("haste")) return new Color(200, 200, 100, 200);
-        if (name.contains("strength")) return new Color(255, 100, 100, 200);
-        if (name.contains("jump boost")) return new Color(100, 255, 100, 200);
-        if (name.contains("regeneration")) return new Color(255, 100, 200, 200);
-        if (name.contains("resistance")) return new Color(200, 150, 100, 200);
-        if (name.contains("fire resistance")) return new Color(255, 150, 50, 200);
-        if (name.contains("water breathing")) return new Color(50, 150, 255, 200);
-        if (name.contains("invisibility")) return new Color(150, 150, 150, 200);
-        if (name.contains("night vision")) return new Color(100, 200, 100, 200);
-        if (name.contains("poison")) return new Color(100, 150, 50, 200);
-        if (name.contains("wither")) return new Color(50, 50, 50, 200);
-        if (name.contains("absorption")) return new Color(255, 200, 100, 200);
-        return new Color(200, 200, 200, 200);
     }
 
     private int getTopLeftHeight() {
