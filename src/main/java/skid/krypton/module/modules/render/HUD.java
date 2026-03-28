@@ -222,7 +222,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - Center is player, facing direction is TOP of radar
+    // RADAR - Center is player, facing direction is TOP of radar (FIXED)
     private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
         int range = (int) radarRange.getValue();
@@ -236,9 +236,11 @@ public final class HUD extends Module {
         int centerX = x + size / 2;
         int centerY = y + size / 2;
         
-        // Get player's facing direction
+        // Get player's facing direction (yaw in degrees, 0 = South, 90 = West, 180 = North, 270 = East)
         float yaw = mc.player.getYaw();
-        double rad = Math.toRadians(yaw);
+        // Adjust so 0 = North (the top of the radar)
+        float adjustedYaw = yaw + 180;
+        double rad = Math.toRadians(adjustedYaw);
         
         // Draw + crosshair - centered on player
         int armLength = size / 2 - 6;
@@ -256,11 +258,11 @@ public final class HUD extends Module {
         // Draw center dot (player)
         ctx.fill(centerX - 1, centerY - 1, centerX + 1, centerY + 1, URANIUM_GREEN.getRGB());
         
-        // Draw cardinal directions - facing direction (where you're looking) is TOP
+        // Draw cardinal directions - FIXED: The direction you're facing goes to the TOP
         int compassDistance = size / 2 - 15;
         
-        // Calculate positions so that the direction you're facing goes to the TOP
-        // When you look North, N appears at top. When you look East, E appears at top.
+        // Calculate positions for cardinal directions
+        // Using adjusted yaw so North is at the top
         int northX = centerX + (int)(Math.sin(rad) * compassDistance);
         int northY = centerY - (int)(Math.cos(rad) * compassDistance);
         int southX = centerX - (int)(Math.sin(rad) * compassDistance);
@@ -288,7 +290,8 @@ public final class HUD extends Module {
             
             // Calculate angle relative to your facing direction
             double angle = Math.atan2(dz, dx);
-            double relAngle = angle - rad;
+            // Adjust for the yaw offset
+            double relAngle = angle - Math.toRadians(adjustedYaw);
             
             // Convert to radar coordinates with forward direction going to TOP
             double radarX = Math.sin(relAngle) * distance;
@@ -341,7 +344,7 @@ public final class HUD extends Module {
                             
                             // Calculate angle relative to your facing direction
                             double angle = Math.atan2(dz, dx);
-                            double relAngle = angle - rad;
+                            double relAngle = angle - Math.toRadians(adjustedYaw);
                             
                             // Convert to radar coordinates with forward direction going to TOP
                             double radarX = Math.sin(relAngle) * distance;
