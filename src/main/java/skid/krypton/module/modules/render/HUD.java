@@ -222,7 +222,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - Center is player, N/E/S/W rotate to top
+    // RADAR - Center is player, facing direction is TOP of radar
     private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
         int range = (int) radarRange.getValue();
@@ -236,7 +236,7 @@ public final class HUD extends Module {
         int centerX = x + size / 2;
         int centerY = y + size / 2;
         
-        // Get player's facing direction - cardinal directions rotate to match
+        // Get player's facing direction
         float yaw = mc.player.getYaw();
         double rad = Math.toRadians(yaw);
         
@@ -256,23 +256,26 @@ public final class HUD extends Module {
         // Draw center dot (player)
         ctx.fill(centerX - 1, centerY - 1, centerX + 1, centerY + 1, URANIUM_GREEN.getRGB());
         
-        // Draw cardinal directions - rotated so facing direction is TOP
+        // Draw cardinal directions - facing direction (where you're looking) is TOP
         int compassDistance = size / 2 - 15;
-        int northX = centerX + (int)(Math.sin(rad) * compassDistance);
-        int northY = centerY - (int)(Math.cos(rad) * compassDistance);
-        int southX = centerX - (int)(Math.sin(rad) * compassDistance);
-        int southY = centerY + (int)(Math.cos(rad) * compassDistance);
-        int eastX = centerX + (int)(Math.cos(rad) * compassDistance);
-        int eastY = centerY + (int)(Math.sin(rad) * compassDistance);
-        int westX = centerX - (int)(Math.cos(rad) * compassDistance);
-        int westY = centerY - (int)(Math.sin(rad) * compassDistance);
         
-        TextRenderer.drawString("N", ctx, northX - 4, northY - 5, CARDINAL_COLOR.getRGB());
-        TextRenderer.drawString("S", ctx, southX - 4, southY - 5, CARDINAL_COLOR.getRGB());
-        TextRenderer.drawString("E", ctx, eastX - 4, eastY - 5, CARDINAL_COLOR.getRGB());
-        TextRenderer.drawString("W", ctx, westX - 4, westY - 5, CARDINAL_COLOR.getRGB());
+        // Forward direction (where you're looking) goes to TOP
+        int forwardX = centerX + (int)(Math.sin(rad) * compassDistance);
+        int forwardY = centerY - (int)(Math.cos(rad) * compassDistance);
+        int backwardX = centerX - (int)(Math.sin(rad) * compassDistance);
+        int backwardY = centerY + (int)(Math.cos(rad) * compassDistance);
+        int rightX = centerX + (int)(Math.cos(rad) * compassDistance);
+        int rightY = centerY + (int)(Math.sin(rad) * compassDistance);
+        int leftX = centerX - (int)(Math.cos(rad) * compassDistance);
+        int leftY = centerY - (int)(Math.sin(rad) * compassDistance);
         
-        // Draw other players - rotated so facing direction is TOP
+        // Forward direction is where you're looking (top of radar)
+        TextRenderer.drawString("N", ctx, forwardX - 4, forwardY - 5, CARDINAL_COLOR.getRGB());
+        TextRenderer.drawString("S", ctx, backwardX - 4, backwardY - 5, CARDINAL_COLOR.getRGB());
+        TextRenderer.drawString("E", ctx, rightX - 4, rightY - 5, CARDINAL_COLOR.getRGB());
+        TextRenderer.drawString("W", ctx, leftX - 4, leftY - 5, CARDINAL_COLOR.getRGB());
+        
+        // Draw other players - facing direction is TOP
         for (Entity ent : mc.world.getPlayers()) {
             if (ent == mc.player) continue;
             
@@ -282,14 +285,16 @@ public final class HUD extends Module {
             
             if (distance > range) continue;
             
-            // Rotate coordinates based on player facing direction
+            // Calculate angle relative to your facing direction
             double angle = Math.atan2(dz, dx);
             double relAngle = angle - rad;
-            double rotatedX = Math.cos(relAngle) * distance;
-            double rotatedZ = Math.sin(relAngle) * distance;
             
-            int px = (int)(centerX + (rotatedX / range) * (size / 2 - 12));
-            int py = (int)(centerY + (rotatedZ / range) * (size / 2 - 12));
+            // Convert to radar coordinates: forward direction goes UP (negative Y)
+            double radarX = Math.sin(relAngle) * distance;
+            double radarY = -Math.cos(relAngle) * distance;
+            
+            int px = (int)(centerX + (radarX / range) * (size / 2 - 12));
+            int py = (int)(centerY + (radarY / range) * (size / 2 - 12));
             
             if (px > x + 6 && px < x + size - 6 && py > y + 6 && py < y + size - 6) {
                 PlayerEntity player = (PlayerEntity) ent;
@@ -333,14 +338,16 @@ public final class HUD extends Module {
                             String entityType = getBlockEntityName(blockEntity);
                             blockEntityCounts.merge(entityType, 1, Integer::sum);
                             
-                            // Rotate coordinates based on player facing direction
+                            // Calculate angle relative to your facing direction
                             double angle = Math.atan2(dz, dx);
                             double relAngle = angle - rad;
-                            double rotatedX = Math.cos(relAngle) * distance;
-                            double rotatedZ = Math.sin(relAngle) * distance;
                             
-                            int px = (int)(centerX + (rotatedX / range) * (size / 2 - 12));
-                            int py = (int)(centerY + (rotatedZ / range) * (size / 2 - 12));
+                            // Convert to radar coordinates: forward direction goes UP (negative Y)
+                            double radarX = Math.sin(relAngle) * distance;
+                            double radarY = -Math.cos(relAngle) * distance;
+                            
+                            int px = (int)(centerX + (radarX / range) * (size / 2 - 12));
+                            int py = (int)(centerY + (radarY / range) * (size / 2 - 12));
                             
                             if (px > x + 4 && px < x + size - 4 && py > y + 4 && py < y + size - 4) {
                                 Color blockColor = getBlockEntityColor(blockEntity);
