@@ -1,196 +1,81 @@
 package skid.krypton.module.modules.client;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.network.ServerInfo;
-import net.minecraft.util.Formatting;
-import skid.krypton.Krypton;
+import net.minecraft.client.gui.screen.ingame.InventoryScreen;
+import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
 import skid.krypton.event.EventListener;
-import skid.krypton.event.events.PacketEvent;
-import skid.krypton.event.events.Render2DEvent;
-import skid.krypton.event.events.TickEvent;
+import skid.krypton.event.events.PacketReceiveEvent;
+import skid.krypton.gui.ClickGUI;
 import skid.krypton.module.Category;
 import skid.krypton.module.Module;
 import skid.krypton.module.setting.BooleanSetting;
 import skid.krypton.module.setting.ModeSetting;
 import skid.krypton.module.setting.NumberSetting;
 import skid.krypton.utils.EncryptedString;
-import skid.krypton.utils.Fonts;
-import skid.krypton.utils.RenderUtils;
-import skid.krypton.utils.TextRenderer;
 
-import java.awt.*;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 
-public final class Uranium extends Module {
-    
-    // Fixed Uranium Green Color - cannot be changed
-    private static final Color URANIUM_GREEN = new Color(80, 200, 80, 255);
-    private static final Color URANIUM_GREEN_DARK = new Color(50, 150, 50, 255);
-    private static final Color URANIUM_GREEN_GLOW = new Color(80, 200, 80, 100);
-    
-    // Settings that don't affect colors
-    private final BooleanSetting watermark = new BooleanSetting(EncryptedString.of("Watermark"), true);
-    private final BooleanSetting arrayList = new BooleanSetting(EncryptedString.of("ArrayList"), true);
-    private final BooleanSetting coordinates = new BooleanSetting(EncryptedString.of("Coordinates"), true);
-    private final BooleanSetting fps = new BooleanSetting(EncryptedString.of("FPS"), true);
-    private final BooleanSetting ping = new BooleanSetting(EncryptedString.of("Ping"), true);
-    private final BooleanSetting serverIP = new BooleanSetting(EncryptedString.of("Server IP"), true);
-    private final BooleanSetting welcomeMessage = new BooleanSetting(EncryptedString.of("Welcome Message"), true);
-    private final ModeSetting<String> arrayListMode = new ModeSetting<>(EncryptedString.of("ArrayList Mode"), "Right", new String[]{"Right", "Left"});
-    private final NumberSetting arrayListSpacing = new NumberSetting(EncryptedString.of("ArrayList Spacing"), 1, 5, 2, 1);
-    
-    // Removed all color settings
-    
-    private final Random random = new Random();
-    private String welcomeText = "";
-    private long welcomeTime = 0;
-    
-    public Uranium() {
-        super(EncryptedString.of("Uranium"), EncryptedString.of("Client settings and visual enhancements"), -1, Category.CLIENT);
-        
-        this.addSettings(
-            this.watermark, this.arrayList, this.coordinates, this.fps, this.ping, 
-            this.serverIP, this.welcomeMessage, this.arrayListMode, this.arrayListSpacing
-        );
-        
-        this.setEnabled(true);
+public final class Krypton extends Module {
+    public static final NumberSetting redColor = new NumberSetting(EncryptedString.of("Red"), 0.0, 255.0, 120.0, 1.0);
+    public static final NumberSetting greenColor = new NumberSetting(EncryptedString.of("Green"), 0.0, 255.0, 190.0, 1.0);
+    public static final NumberSetting blueColor = new NumberSetting(EncryptedString.of("Blue"), 0.0, 255.0, 255.0, 1.0);
+    public static final NumberSetting windowAlpha = new NumberSetting(EncryptedString.of("Window Alpha"), 0.0, 255.0, 170.0, 1.0);
+    public static final BooleanSetting enableBreathingEffect = new BooleanSetting(EncryptedString.of("Breathing"), false).setDescription(EncryptedString.of("Color breathing effect (only with rainbow off)"));
+    public static final BooleanSetting enableRainbowEffect = new BooleanSetting(EncryptedString.of("Rainbow"), false).setDescription(EncryptedString.of("Enables LGBTQ mode"));
+    public static final BooleanSetting renderBackground = new BooleanSetting(EncryptedString.of("Background"), true).setDescription(EncryptedString.of("Renders the background of the Click Gui"));
+    public static final BooleanSetting useCustomFont = new BooleanSetting(EncryptedString.of("Custom Font"), true);
+    private final BooleanSetting preventClose = new BooleanSetting(EncryptedString.of("Prevent Close"), true).setDescription(EncryptedString.of("For servers with freeze plugins that don't let you open the GUI"));
+    public static final NumberSetting cornerRoundness = new NumberSetting(EncryptedString.of("Roundness"), 1.0, 10.0, 5.0, 1.0);
+    public static final ModeSetting<AnimationMode> animationMode = new ModeSetting<>(EncryptedString.of("Animations"), AnimationMode.NORMAL, AnimationMode.class);
+    public static final BooleanSetting enableMSAA = new BooleanSetting(EncryptedString.of("MSAA"), true).setDescription(EncryptedString.of("Anti Aliasing | This can impact performance if you're using tracers but gives them a smoother look |"));
+    public boolean shouldPreventClose;
+
+    public Krypton() {
+        super(EncryptedString.of("Krypton+"), EncryptedString.of("Settings for the client"), 344, Category.CLIENT);
+        this.addSettings(Krypton.redColor, Krypton.greenColor, Krypton.blueColor, Krypton.windowAlpha, Krypton.renderBackground, this.preventClose, Krypton.cornerRoundness, Krypton.animationMode, Krypton.enableMSAA);
     }
-    
+
     @Override
     public void onEnable() {
+        skid.krypton.Krypton.INSTANCE.screen = this.mc.currentScreen;
+        if (skid.krypton.Krypton.INSTANCE.GUI != null) {
+            this.mc.setScreenAndRender(skid.krypton.Krypton.INSTANCE.GUI);
+        } else if (this.mc.currentScreen instanceof InventoryScreen) {
+            shouldPreventClose = true;
+        }
+        if (new Random().nextInt(3) == 1) {
+            CompletableFuture.runAsync(() -> {
+            });
+        }
         super.onEnable();
-        
-        if (welcomeMessage.getValue() && welcomeText.isEmpty()) {
-            String[] greetings = {
-                "Uranium Client loaded!", 
-                "Welcome to Uranium!", 
-                "Uranium Client - Premium Experience",
-                "Uranium is ready!",
-                "Stay bright with Uranium!"
-            };
-            welcomeText = greetings[random.nextInt(greetings.length)];
-            welcomeTime = System.currentTimeMillis();
-        }
     }
-    
+
+    @Override
+    public void onDisable() {
+        if (this.mc.currentScreen instanceof ClickGUI) {
+            skid.krypton.Krypton.INSTANCE.GUI.close();
+            this.mc.setScreenAndRender(skid.krypton.Krypton.INSTANCE.screen);
+            skid.krypton.Krypton.INSTANCE.GUI.onGuiClose();
+        } else if (this.mc.currentScreen instanceof InventoryScreen) {
+            shouldPreventClose = false;
+        }
+        super.onDisable();
+    }
+
     @EventListener
-    public void onRender2D(Render2DEvent event) {
-        DrawContext context = event.context;
-        int width = mc.getWindow().getWidth();
-        int height = mc.getWindow().getHeight();
-        
-        if (watermark.getValue()) {
-            renderWatermark(context, width, height);
-        }
-        
-        if (arrayList.getValue()) {
-            renderArrayList(context, width, height);
-        }
-        
-        if (welcomeMessage.getValue() && !welcomeText.isEmpty() && System.currentTimeMillis() - welcomeTime < 5000) {
-            renderWelcomeMessage(context, width, height);
+    public void onPacketReceive(final PacketReceiveEvent packetReceiveEvent) {
+        if (shouldPreventClose && packetReceiveEvent.packet instanceof OpenScreenS2CPacket && this.preventClose.getValue()) {
+            packetReceiveEvent.cancel();
         }
     }
-    
-    private void renderWatermark(DrawContext context, int width, int height) {
-        String watermarkText = "URANIUM";
-        int textWidth = TextRenderer.getWidth(watermarkText);
-        int x = 5;
-        int y = 5;
-        int padding = 8;
-        int bgWidth = textWidth + padding * 2;
-        int bgHeight = 20;
-        
-        // Background with uranium green accent
-        RenderUtils.renderRoundedQuad(context.getMatrices(), new Color(15, 18, 15, 200), x, y, x + bgWidth, y + bgHeight, 6, 6, 6, 6, 50);
-        
-        // Draw text with uranium green
-        TextRenderer.drawString(watermarkText, context, x + padding, y + 6, URANIUM_GREEN.getRGB());
-        
-        // Small accent line
-        context.fill(x + 2, y + 2, x + 4, y + bgHeight - 2, URANIUM_GREEN.getRGB());
-    }
-    
-    private void renderArrayList(DrawContext context, int width, int height) {
-        java.util.List<Module> modules = Krypton.INSTANCE.getModuleManager().b();
-        int y = 5;
-        int spacing = arrayListSpacing.getIntValue() + 10;
-        int x = arrayListMode.getValue().equals("Right") ? width - 10 : 10;
-        int alignment = arrayListMode.getValue().equals("Right") ? -1 : 1;
-        
-        for (Module module : modules) {
-            if (module.isEnabled() && module != this) {
-                String name = module.getName();
-                int textWidth = TextRenderer.getWidth(name);
-                int bgX = arrayListMode.getValue().equals("Right") ? x - textWidth - 8 : x;
-                int bgWidth = textWidth + 16;
-                
-                // Background
-                RenderUtils.renderRoundedQuad(context.getMatrices(), new Color(15, 18, 15, 180), 
-                    bgX, y, bgX + bgWidth, y + 18, 4, 4, 4, 4, 50);
-                
-                // Left accent bar
-                int accentX = arrayListMode.getValue().equals("Right") ? bgX : bgX + bgWidth - 3;
-                context.fill(accentX, y + 2, accentX + 2, y + 16, URANIUM_GREEN.getRGB());
-                
-                // Module name in uranium green
-                int textX = arrayListMode.getValue().equals("Right") ? bgX + 8 : bgX + 8;
-                TextRenderer.drawString(name, context, textX, y + 5, URANIUM_GREEN.getRGB());
-                
-                y += spacing;
-            }
+
+    public enum AnimationMode {
+        NORMAL("Normal", 0),
+        POSITIVE("Positive", 1),
+        OFF("Off", 2);
+
+        AnimationMode(final String name, final int ordinal) {
         }
     }
-    
-    private void renderWelcomeMessage(DrawContext context, int width, int height) {
-        int textWidth = TextRenderer.getWidth(welcomeText);
-        int x = (width - textWidth) / 2 - 10;
-        int y = height / 3;
-        int padding = 12;
-        int bgWidth = textWidth + padding * 2;
-        int bgHeight = 28;
-        
-        // Animated fade out
-        float alpha = Math.min(1.0f, (5000 - (System.currentTimeMillis() - welcomeTime)) / 2000f);
-        if (alpha < 0) alpha = 0;
-        
-        Color bgColor = new Color(15, 18, 15, (int)(200 * alpha));
-        RenderUtils.renderRoundedQuad(context.getMatrices(), bgColor, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
-        
-        Color textColor = new Color(URANIUM_GREEN.getRed(), URANIUM_GREEN.getGreen(), URANIUM_GREEN.getBlue(), (int)(255 * alpha));
-        TextRenderer.drawString(welcomeText, context, x + padding, y + 10, textColor.getRGB());
-    }
-    
-    @EventListener
-    public void onTick(TickEvent event) {
-        if (welcomeMessage.getValue() && welcomeText.isEmpty() && !welcomeMessage.getValue()) {
-            String[] greetings = {
-                "Uranium Client loaded!", 
-                "Welcome to Uranium!", 
-                "Uranium Client - Premium Experience",
-                "Uranium is ready!",
-                "Stay bright with Uranium!"
-            };
-            welcomeText = greetings[random.nextInt(greetings.length)];
-            welcomeTime = System.currentTimeMillis();
-        }
-    }
-    
-    @EventListener
-    public void onPacket(PacketEvent event) {
-        // No color-related code here
-    }
-    
-    // Override any color getters to always return uranium green
-    public static Color getUraniumGreen() {
-        return URANIUM_GREEN;
-    }
-    
-    public static Color getUraniumGreenDark() {
-        return URANIUM_GREEN_DARK;
-    }
-    
-    public static Color getUraniumGreenGlow() {
-        return URANIUM_GREEN_GLOW;
-    }
+
 }
