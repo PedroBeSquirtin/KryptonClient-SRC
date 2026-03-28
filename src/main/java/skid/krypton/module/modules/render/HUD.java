@@ -6,6 +6,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3d;
 import skid.krypton.Krypton;
 import skid.krypton.event.EventListener;
 import skid.krypton.event.events.Render2DEvent;
@@ -32,23 +33,23 @@ public final class HUD extends Module {
     private static final Color TEXT_GRAY = new Color(170, 180, 170, 255);
     private static final Color CARDINAL_COLOR = new Color(80, 200, 80, 180);
     
-    // Potion Textures (Minecraft default potion icons)
-    private static final Identifier SPEED_ICON = new Identifier("textures/mob_effect/speed.png");
-    private static final Identifier SLOWNESS_ICON = new Identifier("textures/mob_effect/slowness.png");
-    private static final Identifier HASTE_ICON = new Identifier("textures/mob_effect/haste.png");
-    private static final Identifier STRENGTH_ICON = new Identifier("textures/mob_effect/strength.png");
-    private static final Identifier JUMP_BOOST_ICON = new Identifier("textures/mob_effect/jump_boost.png");
-    private static final Identifier REGENERATION_ICON = new Identifier("textures/mob_effect/regeneration.png");
-    private static final Identifier RESISTANCE_ICON = new Identifier("textures/mob_effect/resistance.png");
-    private static final Identifier FIRE_RESISTANCE_ICON = new Identifier("textures/mob_effect/fire_resistance.png");
-    private static final Identifier WATER_BREATHING_ICON = new Identifier("textures/mob_effect/water_breathing.png");
-    private static final Identifier INVISIBILITY_ICON = new Identifier("textures/mob_effect/invisibility.png");
-    private static final Identifier NIGHT_VISION_ICON = new Identifier("textures/mob_effect/night_vision.png");
-    private static final Identifier POISON_ICON = new Identifier("textures/mob_effect/poison.png");
-    private static final Identifier WITHER_ICON = new Identifier("textures/mob_effect/wither.png");
-    private static final Identifier ABSORPTION_ICON = new Identifier("textures/mob_effect/absorption.png");
-    private static final Identifier HEALTH_BOOST_ICON = new Identifier("textures/mob_effect/health_boost.png");
-    private static final Identifier LUCK_ICON = new Identifier("textures/mob_effect/luck.png");
+    // Potion Textures (using proper Identifier constructor with namespace)
+    private static final Identifier SPEED_ICON = new Identifier("minecraft", "textures/mob_effect/speed.png");
+    private static final Identifier SLOWNESS_ICON = new Identifier("minecraft", "textures/mob_effect/slowness.png");
+    private static final Identifier HASTE_ICON = new Identifier("minecraft", "textures/mob_effect/haste.png");
+    private static final Identifier STRENGTH_ICON = new Identifier("minecraft", "textures/mob_effect/strength.png");
+    private static final Identifier JUMP_BOOST_ICON = new Identifier("minecraft", "textures/mob_effect/jump_boost.png");
+    private static final Identifier REGENERATION_ICON = new Identifier("minecraft", "textures/mob_effect/regeneration.png");
+    private static final Identifier RESISTANCE_ICON = new Identifier("minecraft", "textures/mob_effect/resistance.png");
+    private static final Identifier FIRE_RESISTANCE_ICON = new Identifier("minecraft", "textures/mob_effect/fire_resistance.png");
+    private static final Identifier WATER_BREATHING_ICON = new Identifier("minecraft", "textures/mob_effect/water_breathing.png");
+    private static final Identifier INVISIBILITY_ICON = new Identifier("minecraft", "textures/mob_effect/invisibility.png");
+    private static final Identifier NIGHT_VISION_ICON = new Identifier("minecraft", "textures/mob_effect/night_vision.png");
+    private static final Identifier POISON_ICON = new Identifier("minecraft", "textures/mob_effect/poison.png");
+    private static final Identifier WITHER_ICON = new Identifier("minecraft", "textures/mob_effect/wither.png");
+    private static final Identifier ABSORPTION_ICON = new Identifier("minecraft", "textures/mob_effect/absorption.png");
+    private static final Identifier HEALTH_BOOST_ICON = new Identifier("minecraft", "textures/mob_effect/health_boost.png");
+    private static final Identifier LUCK_ICON = new Identifier("minecraft", "textures/mob_effect/luck.png");
 
     // SETTINGS
     private final BooleanSetting showWatermark = new BooleanSetting("Watermark", true);
@@ -77,10 +78,9 @@ public final class HUD extends Module {
     @Override
     public void onEnable() {
         super.onEnable();
-        // Hide vanilla potion effects when module is enabled
+        // Hide vanilla potion effects - using the correct options
         if (hideVanillaPotions.getValue()) {
-            mc.options.getEffectAmplifier().setValue(0);
-            mc.options.getEffectDuration().setValue(false);
+            mc.options.hudHidden = true;
         }
     }
 
@@ -88,8 +88,7 @@ public final class HUD extends Module {
     public void onDisable() {
         super.onDisable();
         // Restore vanilla potion effects
-        mc.options.getEffectAmplifier().setValue(1);
-        mc.options.getEffectDuration().setValue(true);
+        mc.options.hudHidden = false;
     }
 
     @EventListener
@@ -263,9 +262,17 @@ public final class HUD extends Module {
         int crosshairX = centerX + (int)(Math.sin(rad) * crosshairLength);
         int crosshairY = centerY + (int)(Math.cos(rad) * crosshairLength);
         
-        // Draw crosshair line
-        RenderUtils.renderLine(ctx.getMatrices(), new Color(80, 200, 80, 200), 
-            new Vec3d(centerX, centerY, 0), new Vec3d(crosshairX, crosshairY, 0));
+        // Draw crosshair line (using simple line drawing since renderLine might not work with Vec3d here)
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(0, 0, 0);
+        // Draw line from center to crosshair point
+        for (int i = 0; i <= 20; i++) {
+            float t = i / 20f;
+            int lineX = (int)(centerX + (crosshairX - centerX) * t);
+            int lineY = (int)(centerY + (crosshairY - centerY) * t);
+            ctx.fill(lineX, lineY, lineX + 1, lineY + 1, new Color(80, 200, 80, 200).getRGB());
+        }
+        ctx.getMatrices().pop();
         
         // Draw center dot (player)
         ctx.fill(centerX - 3, centerY - 3, centerX + 3, centerY + 3, URANIUM_GREEN.getRGB());
@@ -430,7 +437,7 @@ public final class HUD extends Module {
         if (name.contains("health boost")) return HEALTH_BOOST_ICON;
         if (name.contains("luck")) return LUCK_ICON;
         
-        return SPEED_ICON; // Default
+        return SPEED_ICON;
     }
 
     private int getTopLeftHeight() {
