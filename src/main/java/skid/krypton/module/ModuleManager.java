@@ -62,6 +62,7 @@ public final class ModuleManager {
         this.a(new HUD());
         this.a(new PlayerESP());
         this.a(new StorageESP());
+        this.a(new BlockESP());
         this.a(new TargetHUD());
         this.a(new Krypton());
         this.a(new SelfDestruct());
