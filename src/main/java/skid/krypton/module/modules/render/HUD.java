@@ -295,13 +295,12 @@ public final class HUD extends Module {
             }
         }
         
-        // Draw block entities - FIXED: Use for loop through loaded chunks differently
+        // Draw block entities - FIXED: removed isLoaded() check
         if (showBlockEntities.getValue()) {
-            // Iterate through all loaded chunks using the chunk manager
             for (int chunkX = -range; chunkX <= range; chunkX++) {
                 for (int chunkZ = -range; chunkZ <= range; chunkZ++) {
                     WorldChunk chunk = mc.world.getChunkManager().getWorldChunk(mc.player.getChunkPos().x + chunkX, mc.player.getChunkPos().z + chunkZ);
-                    if (chunk != null && chunk.isLoaded()) {
+                    if (chunk != null) {
                         for (BlockPos pos : chunk.getBlockEntityPositions()) {
                             BlockEntity blockEntity = mc.world.getBlockEntity(pos);
                             if (blockEntity == null) continue;
