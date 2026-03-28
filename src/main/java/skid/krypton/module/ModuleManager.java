@@ -63,7 +63,7 @@ public final class ModuleManager {
         this.a(new PlayerESP());
         this.a(new StorageESP());
         this.a(new TargetHUD());
-        this.a(new Uranium());
+        this.a(new Krypton());
         this.a(new SelfDestruct());
     }
 
