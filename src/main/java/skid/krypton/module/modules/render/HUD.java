@@ -4,6 +4,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.util.math.MathHelper;
 import skid.krypton.Krypton;
 import skid.krypton.event.EventListener;
@@ -159,15 +160,16 @@ public final class HUD extends Module {
         }
     }
 
-    // POTIONS
+    // POTIONS - FIXED
     private void renderPotions(DrawContext ctx) {
         int x = 5;
         int y = 145;
         int offset = 0;
 
         for (StatusEffectInstance effect : mc.player.getStatusEffects()) {
-            String text = effect.getEffectType().getName().getString() +
-                    " " + (effect.getDuration() / 20) + "s";
+            // Get potion name safely
+            String effectName = effect.getEffectType().getName().getString();
+            String text = effectName + " " + (effect.getDuration() / 20) + "s";
 
             int width = TextRenderer.getWidth(text);
 
@@ -198,7 +200,7 @@ public final class HUD extends Module {
         }
     }
 
-    // MODULE LIST
+    // MODULE LIST - FIXED
     private void renderModules(DrawContext ctx, int w) {
         List<Module> list = getSortedModules();
         int y = 5;
@@ -206,7 +208,8 @@ public final class HUD extends Module {
         for (Module m : list) {
             if (!m.isEnabled()) continue;
 
-            String name = m.getName();
+            // Convert CharSequence to String properly
+            String name = m.getName().toString();
             int width = TextRenderer.getWidth(name);
 
             int x = w - width - 10;
@@ -232,14 +235,39 @@ public final class HUD extends Module {
     }
 
     private List<Module> getSortedModules() {
-        return Krypton.INSTANCE.getModuleManager().b();
+        List<Module> modules = Krypton.INSTANCE.getModuleManager().b();
+        List<Module> sorted = new ArrayList<>(modules);
+        
+        switch (moduleSortingMode.getValue()) {
+            case LENGTH:
+                sorted.sort((a, b) -> Integer.compare(b.getName().length(), a.getName().length()));
+                break;
+            case ALPHABETICAL:
+                sorted.sort((a, b) -> a.getName().toString().compareToIgnoreCase(b.getName().toString()));
+                break;
+            case CATEGORY:
+                sorted.sort((a, b) -> a.getCategory().compareTo(b.getCategory()));
+                break;
+        }
+        
+        return sorted;
     }
 
     private String getPingInfo() {
-        PlayerListEntry entry = mc.getNetworkHandler()
-                .getPlayerListEntry(mc.player.getUuid());
+        if (mc.getNetworkHandler() != null && mc.player != null) {
+            PlayerListEntry entry = mc.getNetworkHandler()
+                    .getPlayerListEntry(mc.player.getUuid());
+            return entry != null ? "Ping: " + entry.getLatency() + "ms | " : "Ping: N/A | ";
+        }
+        return "Ping: N/A | ";
+    }
 
-        return entry != null ? "Ping: " + entry.getLatency() + "ms | " : "Ping: N/A | ";
+    public void addNotification(String message) {
+        notifications.add(message);
+        // Keep only last 5 notifications
+        while (notifications.size() > 5) {
+            notifications.remove(0);
+        }
     }
 
     enum ModuleListSorting {
