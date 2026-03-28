@@ -2,8 +2,11 @@ package skid.krypton.module.modules.render;
 
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.Identifier;
 import skid.krypton.Krypton;
 import skid.krypton.event.EventListener;
 import skid.krypton.event.events.Render2DEvent;
@@ -28,8 +31,38 @@ public final class HUD extends Module {
     private static final Color BG_DARK = new Color(15, 18, 15, 200);
     private static final Color TEXT_WHITE = new Color(255, 255, 255, 255);
     private static final Color TEXT_GRAY = new Color(170, 180, 170, 255);
-    private static final Color RADAR_PLAYER = new Color(80, 200, 80, 200);
-    private static final Color RADAR_ENTITY = new Color(200, 80, 80, 180);
+    
+    // Potion Colors
+    private static final Color SPEED_COLOR = new Color(100, 200, 255, 200);
+    private static final Color SLOWNESS_COLOR = new Color(100, 100, 150, 200);
+    private static final Color HASTE_COLOR = new Color(200, 200, 100, 200);
+    private static final Color MINING_FATIGUE_COLOR = new Color(100, 100, 100, 200);
+    private static final Color STRENGTH_COLOR = new Color(255, 100, 100, 200);
+    private static final Color JUMP_BOOST_COLOR = new Color(100, 255, 100, 200);
+    private static final Color NAUSEA_COLOR = new Color(100, 255, 100, 200);
+    private static final Color REGENERATION_COLOR = new Color(255, 100, 200, 200);
+    private static final Color RESISTANCE_COLOR = new Color(200, 150, 100, 200);
+    private static final Color FIRE_RESISTANCE_COLOR = new Color(255, 150, 50, 200);
+    private static final Color WATER_BREATHING_COLOR = new Color(50, 150, 255, 200);
+    private static final Color INVISIBILITY_COLOR = new Color(150, 150, 150, 200);
+    private static final Color BLINDNESS_COLOR = new Color(50, 50, 50, 200);
+    private static final Color NIGHT_VISION_COLOR = new Color(100, 200, 100, 200);
+    private static final Color HUNGER_COLOR = new Color(100, 100, 50, 200);
+    private static final Color WEAKNESS_COLOR = new Color(150, 100, 100, 200);
+    private static final Color POISON_COLOR = new Color(100, 150, 50, 200);
+    private static final Color WITHER_COLOR = new Color(50, 50, 50, 200);
+    private static final Color HEALTH_BOOST_COLOR = new Color(255, 100, 100, 200);
+    private static final Color ABSORPTION_COLOR = new Color(255, 200, 100, 200);
+    private static final Color SATURATION_COLOR = new Color(200, 100, 200, 200);
+    private static final Color GLOWING_COLOR = new Color(255, 255, 100, 200);
+    private static final Color LEVITATION_COLOR = new Color(100, 200, 200, 200);
+    private static final Color LUCK_COLOR = new Color(200, 200, 100, 200);
+    private static final Color BAD_LUCK_COLOR = new Color(100, 100, 50, 200);
+    private static final Color SLOW_FALLING_COLOR = new Color(150, 200, 255, 200);
+    private static final Color CONDUIT_POWER_COLOR = new Color(100, 200, 200, 200);
+    private static final Color DOLPHINS_GRACE_COLOR = new Color(100, 200, 255, 200);
+    private static final Color HERO_OF_THE_VILLAGE_COLOR = new Color(200, 200, 100, 200);
+    private static final Color DARKNESS_COLOR = new Color(50, 50, 50, 200);
 
     // SETTINGS
     private final BooleanSetting showWatermark = new BooleanSetting("Watermark", true);
@@ -39,7 +72,8 @@ public final class HUD extends Module {
     private final BooleanSetting showCoordinates = new BooleanSetting("Coordinates", true);
     private final BooleanSetting showRadar = new BooleanSetting("Radar", true);
     private final BooleanSetting showPotions = new BooleanSetting("Potions", true);
-    private final NumberSetting radarSize = new NumberSetting("Radar Size", 50, 150, 90, 5);
+    private final NumberSetting radarSize = new NumberSetting("Radar Size", 80, 200, 120, 5);
+    private final NumberSetting radarRange = new NumberSetting("Radar Range", 10, 50, 25, 5);
     
     private final ModeSetting<ModuleListSorting> moduleSortingMode =
             new ModeSetting<>("Sort Mode", ModuleListSorting.LENGTH, ModuleListSorting.class);
@@ -49,7 +83,7 @@ public final class HUD extends Module {
 
         this.addSettings(
                 showWatermark, showInfo, showModules, showTime, showCoordinates,
-                showRadar, radarSize, showPotions, moduleSortingMode
+                showRadar, radarSize, radarRange, showPotions, moduleSortingMode
         );
     }
 
@@ -62,37 +96,79 @@ public final class HUD extends Module {
 
             RenderUtils.unscaledProjection();
 
-            // Top Left - Watermark and Info
-            if (showWatermark.getValue() || showInfo.getValue()) {
-                renderTopLeft(ctx);
-            }
-            
-            // Top Center - Time
-            if (showTime.getValue()) {
-                renderTime(ctx, w);
-            }
-            
-            // Bottom Left - Coordinates
-            if (showCoordinates.getValue()) {
-                renderCoordinates(ctx, h);
-            }
-            
-            // Bottom Right - Modules
+            // TOP RIGHT - Modules
             if (showModules.getValue()) {
                 renderModules(ctx, w, h);
             }
             
-            // Right side above modules - Potions
-            if (showPotions.getValue()) {
-                renderPotions(ctx, w, h);
+            // TOP LEFT - Watermark and Info
+            if (showWatermark.getValue() || showInfo.getValue()) {
+                renderTopLeft(ctx);
             }
             
-            // Bottom Right above modules - Radar
+            // TOP CENTER - Time
+            if (showTime.getValue()) {
+                renderTime(ctx, w);
+            }
+            
+            // LEFT SIDE - Radar (below watermark)
             if (showRadar.getValue()) {
-                renderRadar(ctx, w, h);
+                renderRadar(ctx);
+            }
+            
+            // LEFT SIDE - Coordinates (below radar)
+            if (showCoordinates.getValue()) {
+                renderCoordinates(ctx);
+            }
+            
+            // LEFT SIDE - Potions (below coordinates)
+            if (showPotions.getValue()) {
+                renderPotions(ctx);
             }
 
             RenderUtils.scaledProjection();
+        }
+    }
+
+    // TOP RIGHT - Enabled Modules
+    private void renderModules(DrawContext ctx, int screenWidth, int screenHeight) {
+        List<Module> list = getSortedModules();
+        int padding = 10;
+        int lineHeight = 14;
+        int y = 12;
+        int moduleCount = 0;
+        
+        for (Module m : list) {
+            if (m.isEnabled()) moduleCount++;
+        }
+        
+        if (moduleCount == 0) return;
+        
+        int bgHeight = moduleCount * lineHeight + padding;
+        int maxWidth = 0;
+        
+        for (Module m : list) {
+            if (m.isEnabled()) {
+                String name = m.getName().toString();
+                int w = TextRenderer.getWidth(name);
+                if (w > maxWidth) maxWidth = w;
+            }
+        }
+        
+        int bgWidth = maxWidth + padding * 2;
+        int x = screenWidth - bgWidth - 12;
+        
+        // Background
+        RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
+        
+        // Module names
+        int textY = y + padding / 2 + 2;
+        for (Module m : list) {
+            if (m.isEnabled()) {
+                String name = m.getName().toString();
+                TextRenderer.drawString(name, ctx, x + padding, textY, URANIUM_GREEN.getRGB());
+                textY += lineHeight;
+            }
         }
     }
 
@@ -161,47 +237,12 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // BOTTOM LEFT - Coordinates
-    private void renderCoordinates(DrawContext ctx, int screenHeight) {
-        String coords = String.format("X: %.0f  Y: %.0f  Z: %.0f",
-                mc.player.getX(), mc.player.getY(), mc.player.getZ());
-        
-        int width = TextRenderer.getWidth(coords);
-        int padding = 14;
-        int bgWidth = width + padding * 2;
-        int bgHeight = 22;
-        int x = 12;
-        int y = screenHeight - bgHeight - 12;
-        
-        // Background
-        RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
-        
-        // Text
-        TextRenderer.drawString(coords, ctx, x + padding, y + 6, TEXT_GRAY.getRGB());
-    }
-
-    // RADAR - Bottom right above modules - FIXED
-    private void renderRadar(DrawContext ctx, int screenWidth, int screenHeight) {
+    // RADAR - Left side (shows player faces)
+    private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
-        
-        // Calculate position above modules
-        int modulesHeight = 0;
-        if (showModules.getValue()) {
-            List<Module> modules = getSortedModules();
-            int moduleCount = 0;
-            for (Module m : modules) {
-                if (m.isEnabled()) moduleCount++;
-            }
-            modulesHeight = moduleCount * 14 + 12;
-        }
-        
-        int potionsHeight = 0;
-        if (showPotions.getValue()) {
-            potionsHeight = mc.player.getStatusEffects().size() * 14 + 12;
-        }
-        
-        int x = screenWidth - size - 12;
-        int y = screenHeight - size - modulesHeight - potionsHeight - 20;
+        int range = (int) radarRange.getValue();
+        int x = 12;
+        int y = getTopLeftHeight() + 12;
         
         // Background
         RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + size, y + size, 8, 8, 8, 8, 50);
@@ -211,11 +252,10 @@ public final class HUD extends Module {
         int centerY = y + size / 2;
         
         // Draw center dot (player)
-        ctx.fill(centerX - 2, centerY - 2, centerX + 2, centerY + 2, URANIUM_GREEN.getRGB());
+        ctx.fill(centerX - 3, centerY - 3, centerX + 3, centerY + 3, URANIUM_GREEN.getRGB());
         
-        // Draw other entities
-        double range = 20.0; // Radar range in blocks
-        for (Entity ent : mc.world.getEntities()) {
+        // Draw other players
+        for (Entity ent : mc.world.getPlayers()) {
             if (ent == mc.player) continue;
             
             double dx = ent.getX() - mc.player.getX();
@@ -225,81 +265,78 @@ public final class HUD extends Module {
             if (distance > range) continue;
             
             // Scale to radar size
-            int px = (int)(centerX + (dx / range) * (size / 2 - 4));
-            int py = (int)(centerY + (dz / range) * (size / 2 - 4));
+            int px = (int)(centerX + (dx / range) * (size / 2 - 8));
+            int py = (int)(centerY + (dz / range) * (size / 2 - 8));
             
             // Check bounds
-            if (px > x + 2 && px < x + size - 2 && py > y + 2 && py < y + size - 2) {
-                // Different color for players vs mobs
-                Color entColor = ent.isPlayer() ? RADAR_PLAYER : RADAR_ENTITY;
-                ctx.fill(px - 1, py - 1, px + 1, py + 1, entColor.getRGB());
+            if (px > x + 4 && px < x + size - 4 && py > y + 4 && py < y + size - 4) {
+                // Draw player head
+                PlayerEntity player = (PlayerEntity) ent;
+                Identifier skin = player.getSkinTexture();
+                
+                // Draw circle background
+                RenderUtils.renderCircle(ctx.getMatrices(), new Color(0, 0, 0, 150), px, py, 8, 16);
+                
+                // Draw player head (scaled down)
+                ctx.getMatrices().push();
+                ctx.getMatrices().translate(px - 4, py - 4, 0);
+                ctx.getMatrices().scale(0.5f, 0.5f, 1);
+                ctx.drawTexture(skin, 0, 0, 8, 8, 8, 8, 64, 64);
+                ctx.getMatrices().pop();
+                
+                // Draw player name
+                String name = player.getName().getString();
+                int nameWidth = TextRenderer.getWidth(name);
+                int nameX = px - nameWidth / 2;
+                int nameY = py + 12;
+                
+                // Name background
+                RenderUtils.renderRoundedQuad(ctx.getMatrices(), new Color(0, 0, 0, 150), nameX - 2, nameY - 2, nameX + nameWidth + 2, nameY + 10, 4, 4, 4, 4, 30);
+                TextRenderer.drawString(name, ctx, nameX, nameY, TEXT_WHITE.getRGB());
             }
         }
         
-        // Draw border using renderRoundedOutline
+        // Draw border
         RenderUtils.renderRoundedOutline(ctx, new Color(80, 200, 80, 100), 
             x, y, x + size, y + size, 8, 8, 8, 8, 2, 5);
-    }
-
-    // BOTTOM RIGHT - Enabled Modules
-    private void renderModules(DrawContext ctx, int screenWidth, int screenHeight) {
-        List<Module> list = getSortedModules();
-        int padding = 10;
-        int lineHeight = 14;
-        int y = screenHeight - 12;
-        int moduleCount = 0;
         
-        for (Module m : list) {
-            if (m.isEnabled()) moduleCount++;
-        }
-        
-        if (moduleCount == 0) return;
-        
-        int bgHeight = moduleCount * lineHeight + padding;
-        int maxWidth = 0;
-        
-        for (Module m : list) {
-            if (m.isEnabled()) {
-                String name = m.getName().toString();
-                int w = TextRenderer.getWidth(name);
-                if (w > maxWidth) maxWidth = w;
-            }
-        }
-        
-        int bgWidth = maxWidth + padding * 2;
-        int x = screenWidth - bgWidth - 12;
-        int startY = y - bgHeight;
-        
-        RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, startY, x + bgWidth, y, 8, 8, 8, 8, 50);
-        
-        int textY = startY + padding / 2 + 2;
-        for (Module m : list) {
-            if (m.isEnabled()) {
-                String name = m.getName().toString();
-                TextRenderer.drawString(name, ctx, x + padding, textY, URANIUM_GREEN.getRGB());
-                textY += lineHeight;
-            }
+        // Draw range circles
+        int step = range / 4;
+        for (int r = step; r <= range; r += step) {
+            int radius = (int)((double)r / range * (size / 2 - 4));
+            RenderUtils.renderCircle(ctx.getMatrices(), new Color(80, 200, 80, 50), centerX, centerY, radius, 36);
         }
     }
 
-    // POTIONS - Right side above modules
-    private void renderPotions(DrawContext ctx, int screenWidth, int screenHeight) {
+    // BOTTOM LEFT - Coordinates (below radar)
+    private void renderCoordinates(DrawContext ctx) {
+        String coords = String.format("X: %.0f  Y: %.0f  Z: %.0f",
+                mc.player.getX(), mc.player.getY(), mc.player.getZ());
+        
+        int width = TextRenderer.getWidth(coords);
+        int padding = 14;
+        int bgWidth = width + padding * 2;
+        int bgHeight = 22;
+        int x = 12;
+        int y = getTopLeftHeight() + (int) radarSize.getValue() + 24;
+        
+        // Background
+        RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
+        
+        // Text
+        TextRenderer.drawString(coords, ctx, x + padding, y + 6, TEXT_GRAY.getRGB());
+    }
+
+    // POTIONS - Left side (below coordinates) with icons
+    private void renderPotions(DrawContext ctx) {
         List<StatusEffectInstance> effects = new ArrayList<>(mc.player.getStatusEffects());
         if (effects.isEmpty()) return;
         
         int padding = 10;
-        int lineHeight = 14;
-        int y = screenHeight - 12;
-        
-        int modulesHeight = 0;
-        if (showModules.getValue()) {
-            List<Module> modules = getSortedModules();
-            int moduleCount = 0;
-            for (Module m : modules) {
-                if (m.isEnabled()) moduleCount++;
-            }
-            modulesHeight = moduleCount * lineHeight + padding;
-        }
+        int lineHeight = 16;
+        int iconSize = 16;
+        int x = 12;
+        int y = getTopLeftHeight() + (int) radarSize.getValue() + 24 + 28;
         
         int potionCount = effects.size();
         int bgHeight = potionCount * lineHeight + padding;
@@ -307,28 +344,80 @@ public final class HUD extends Module {
         
         for (StatusEffectInstance effect : effects) {
             String effectName = effect.getEffectType().value().getName().getString();
-            String text = effectName + " " + (effect.getDuration() / 20);
+            String text = effectName + " " + (effect.getDuration() / 20) + "s";
             int w = TextRenderer.getWidth(text);
             if (w > maxWidth) maxWidth = w;
         }
         
-        int bgWidth = maxWidth + padding * 2;
-        int x = screenWidth - bgWidth - 12;
-        int startY = y - modulesHeight - bgHeight - 5;
+        int bgWidth = maxWidth + iconSize + padding * 2;
         
-        RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, startY, x + bgWidth, startY + bgHeight, 8, 8, 8, 8, 50);
+        // Background
+        RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
         
-        int textY = startY + padding / 2 + 2;
+        // Potion list with icons
+        int textY = y + padding / 2 + 3;
         for (StatusEffectInstance effect : effects) {
             String effectName = effect.getEffectType().value().getName().getString();
             int duration = effect.getDuration() / 20;
-            String text = effectName + " " + duration;
-            TextRenderer.drawString(text, ctx, x + padding, textY, TEXT_GRAY.getRGB());
+            String text = effectName + " " + duration + "s";
+            Color effectColor = getPotionColor(effect);
+            
+            // Draw potion icon (colored circle)
+            RenderUtils.renderCircle(ctx.getMatrices(), effectColor, x + padding + 8, textY + 5, 6, 12);
+            
+            // Draw text
+            TextRenderer.drawString(text, ctx, x + padding + iconSize + 4, textY, TEXT_GRAY.getRGB());
             textY += lineHeight;
         }
+    }
+
+    private Color getPotionColor(StatusEffectInstance effect) {
+        String name = effect.getEffectType().value().getName().getString().toLowerCase();
         
-        // Add "POTIONS" header
-        TextRenderer.drawString("POTIONS", ctx, x + padding, startY + padding / 2 - 10, URANIUM_GREEN.getRGB());
+        if (name.contains("speed")) return SPEED_COLOR;
+        if (name.contains("slowness")) return SLOWNESS_COLOR;
+        if (name.contains("haste")) return HASTE_COLOR;
+        if (name.contains("mining fatigue")) return MINING_FATIGUE_COLOR;
+        if (name.contains("strength")) return STRENGTH_COLOR;
+        if (name.contains("jump boost")) return JUMP_BOOST_COLOR;
+        if (name.contains("nausea")) return NAUSEA_COLOR;
+        if (name.contains("regeneration")) return REGENERATION_COLOR;
+        if (name.contains("resistance")) return RESISTANCE_COLOR;
+        if (name.contains("fire resistance")) return FIRE_RESISTANCE_COLOR;
+        if (name.contains("water breathing")) return WATER_BREATHING_COLOR;
+        if (name.contains("invisibility")) return INVISIBILITY_COLOR;
+        if (name.contains("blindness")) return BLINDNESS_COLOR;
+        if (name.contains("night vision")) return NIGHT_VISION_COLOR;
+        if (name.contains("hunger")) return HUNGER_COLOR;
+        if (name.contains("weakness")) return WEAKNESS_COLOR;
+        if (name.contains("poison")) return POISON_COLOR;
+        if (name.contains("wither")) return WITHER_COLOR;
+        if (name.contains("health boost")) return HEALTH_BOOST_COLOR;
+        if (name.contains("absorption")) return ABSORPTION_COLOR;
+        if (name.contains("saturation")) return SATURATION_COLOR;
+        if (name.contains("glowing")) return GLOWING_COLOR;
+        if (name.contains("levitation")) return LEVITATION_COLOR;
+        if (name.contains("luck")) return LUCK_COLOR;
+        if (name.contains("bad luck")) return BAD_LUCK_COLOR;
+        if (name.contains("slow falling")) return SLOW_FALLING_COLOR;
+        if (name.contains("conduit power")) return CONDUIT_POWER_COLOR;
+        if (name.contains("dolphin's grace")) return DOLPHINS_GRACE_COLOR;
+        if (name.contains("hero of the village")) return HERO_OF_THE_VILLAGE_COLOR;
+        if (name.contains("darkness")) return DARKNESS_COLOR;
+        
+        return new Color(200, 200, 200, 200);
+    }
+
+    private int getTopLeftHeight() {
+        int height = 0;
+        if (showWatermark.getValue() || showInfo.getValue()) {
+            if (showWatermark.getValue() && showInfo.getValue()) {
+                height = 12 + 10 + 14 + 14 + 10; // y + padding + line1 + line2 + padding
+            } else if (showWatermark.getValue() || showInfo.getValue()) {
+                height = 12 + 10 + 14 + 10;
+            }
+        }
+        return height;
     }
 
     private List<Module> getSortedModules() {
