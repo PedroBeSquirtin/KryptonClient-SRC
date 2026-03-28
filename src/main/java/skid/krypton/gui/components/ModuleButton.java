@@ -27,7 +27,7 @@ public final class ModuleButton {
     public Animation animation;
     
     private final Color MODULE_BG = new Color(22, 30, 22, 235);
-    private final Color HOVER_BG = new Color(120, 255, 120, 20);
+    private final Color HOVER_BG = new Color(100, 220, 100, 20);
     private final Color BORDER_COLOR = new Color(65, 95, 65, 120);
     private final Color GLOW_GREEN = new Color(70, 180, 70, 60);
     private final Color BUTTON_ON = new Color(50, 140, 50, 255);
@@ -188,7 +188,7 @@ public final class ModuleButton {
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), buttonBg,
             buttonX, buttonY, buttonX + buttonWidth, buttonY + buttonHeight, 11, 11, 11, 11, 30);
         
-        // Button text - PERFECTLY CENTERED (dead center)
+        // Button text - perfectly centered
         String buttonText = isEnabled ? "ON" : "OFF";
         int textWidth = getTextWidth(buttonText);
         int textXPos = buttonX + (buttonWidth - textWidth) / 2;
