@@ -79,7 +79,7 @@ public final class Fullbright extends Module {
         }
     }
     
-    @Override
+    // No @Override here - this is a custom update method called from somewhere else
     public void onUpdate() {
         if (!isEnabled()) return;
         
