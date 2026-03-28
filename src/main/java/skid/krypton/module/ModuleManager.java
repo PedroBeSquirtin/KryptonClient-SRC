@@ -11,6 +11,7 @@ import skid.krypton.module.modules.misc.*;
 import skid.krypton.module.modules.render.HUD;
 import skid.krypton.module.modules.render.PlayerESP;
 import skid.krypton.module.modules.render.StorageESP;
+import skid.krypton.module.modules.render.BlockESP;
 import skid.krypton.module.modules.render.TargetHUD;
 import skid.krypton.module.setting.BindSetting;
 import skid.krypton.utils.EncryptedString;
