@@ -5,6 +5,7 @@ import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.Identifier;
 import skid.krypton.Krypton;
 import skid.krypton.event.EventListener;
 import skid.krypton.event.events.Render2DEvent;
@@ -29,20 +30,25 @@ public final class HUD extends Module {
     private static final Color BG_DARK = new Color(15, 18, 15, 200);
     private static final Color TEXT_WHITE = new Color(255, 255, 255, 255);
     private static final Color TEXT_GRAY = new Color(170, 180, 170, 255);
+    private static final Color CARDINAL_COLOR = new Color(80, 200, 80, 180);
     
-    // Potion Colors
-    private static final Color SPEED_COLOR = new Color(100, 200, 255, 200);
-    private static final Color STRENGTH_COLOR = new Color(255, 100, 100, 200);
-    private static final Color JUMP_BOOST_COLOR = new Color(100, 255, 100, 200);
-    private static final Color REGENERATION_COLOR = new Color(255, 100, 200, 200);
-    private static final Color RESISTANCE_COLOR = new Color(200, 150, 100, 200);
-    private static final Color FIRE_RESISTANCE_COLOR = new Color(255, 150, 50, 200);
-    private static final Color WATER_BREATHING_COLOR = new Color(50, 150, 255, 200);
-    private static final Color INVISIBILITY_COLOR = new Color(150, 150, 150, 200);
-    private static final Color NIGHT_VISION_COLOR = new Color(100, 200, 100, 200);
-    private static final Color POISON_COLOR = new Color(100, 150, 50, 200);
-    private static final Color WITHER_COLOR = new Color(50, 50, 50, 200);
-    private static final Color ABSORPTION_COLOR = new Color(255, 200, 100, 200);
+    // Potion Textures (Minecraft default potion icons)
+    private static final Identifier SPEED_ICON = new Identifier("textures/mob_effect/speed.png");
+    private static final Identifier SLOWNESS_ICON = new Identifier("textures/mob_effect/slowness.png");
+    private static final Identifier HASTE_ICON = new Identifier("textures/mob_effect/haste.png");
+    private static final Identifier STRENGTH_ICON = new Identifier("textures/mob_effect/strength.png");
+    private static final Identifier JUMP_BOOST_ICON = new Identifier("textures/mob_effect/jump_boost.png");
+    private static final Identifier REGENERATION_ICON = new Identifier("textures/mob_effect/regeneration.png");
+    private static final Identifier RESISTANCE_ICON = new Identifier("textures/mob_effect/resistance.png");
+    private static final Identifier FIRE_RESISTANCE_ICON = new Identifier("textures/mob_effect/fire_resistance.png");
+    private static final Identifier WATER_BREATHING_ICON = new Identifier("textures/mob_effect/water_breathing.png");
+    private static final Identifier INVISIBILITY_ICON = new Identifier("textures/mob_effect/invisibility.png");
+    private static final Identifier NIGHT_VISION_ICON = new Identifier("textures/mob_effect/night_vision.png");
+    private static final Identifier POISON_ICON = new Identifier("textures/mob_effect/poison.png");
+    private static final Identifier WITHER_ICON = new Identifier("textures/mob_effect/wither.png");
+    private static final Identifier ABSORPTION_ICON = new Identifier("textures/mob_effect/absorption.png");
+    private static final Identifier HEALTH_BOOST_ICON = new Identifier("textures/mob_effect/health_boost.png");
+    private static final Identifier LUCK_ICON = new Identifier("textures/mob_effect/luck.png");
 
     // SETTINGS
     private final BooleanSetting showWatermark = new BooleanSetting("Watermark", true);
@@ -52,8 +58,9 @@ public final class HUD extends Module {
     private final BooleanSetting showCoordinates = new BooleanSetting("Coordinates", true);
     private final BooleanSetting showRadar = new BooleanSetting("Radar", true);
     private final BooleanSetting showPotions = new BooleanSetting("Potions", true);
-    private final NumberSetting radarSize = new NumberSetting("Radar Size", 80, 200, 120, 5);
-    private final NumberSetting radarRange = new NumberSetting("Radar Range", 10, 50, 25, 5);
+    private final BooleanSetting hideVanillaPotions = new BooleanSetting("Hide Vanilla Potions", true);
+    private final NumberSetting radarSize = new NumberSetting("Radar Size", 100, 250, 180, 5);
+    private final NumberSetting radarRange = new NumberSetting("Radar Range", 10, 60, 30, 5);
     
     private final ModeSetting<ModuleListSorting> moduleSortingMode =
             new ModeSetting<>("Sort Mode", ModuleListSorting.LENGTH, ModuleListSorting.class);
@@ -63,8 +70,26 @@ public final class HUD extends Module {
 
         this.addSettings(
                 showWatermark, showInfo, showModules, showTime, showCoordinates,
-                showRadar, radarSize, radarRange, showPotions, moduleSortingMode
+                showRadar, radarSize, radarRange, showPotions, hideVanillaPotions, moduleSortingMode
         );
+    }
+
+    @Override
+    public void onEnable() {
+        super.onEnable();
+        // Hide vanilla potion effects when module is enabled
+        if (hideVanillaPotions.getValue()) {
+            mc.options.getEffectAmplifier().setValue(0);
+            mc.options.getEffectDuration().setValue(false);
+        }
+    }
+
+    @Override
+    public void onDisable() {
+        super.onDisable();
+        // Restore vanilla potion effects
+        mc.options.getEffectAmplifier().setValue(1);
+        mc.options.getEffectDuration().setValue(true);
     }
 
     @EventListener
@@ -113,8 +138,8 @@ public final class HUD extends Module {
     // TOP RIGHT - Enabled Modules
     private void renderModules(DrawContext ctx, int screenWidth, int screenHeight) {
         List<Module> list = getSortedModules();
-        int padding = 10;
-        int lineHeight = 14;
+        int padding = 8;
+        int lineHeight = 12;
         int y = 12;
         int moduleCount = 0;
         
@@ -217,7 +242,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - Left side (shows player dots with names)
+    // RADAR - Larger with cardinal directions and crosshair
     private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
         int range = (int) radarRange.getValue();
@@ -227,14 +252,31 @@ public final class HUD extends Module {
         // Background
         RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + size, y + size, 8, 8, 8, 8, 50);
         
-        // Center of radar (player position)
+        // Center of radar
         int centerX = x + size / 2;
         int centerY = y + size / 2;
+        
+        // Draw crosshair (shows direction you're facing)
+        float yaw = mc.player.getYaw();
+        double rad = Math.toRadians(yaw);
+        int crosshairLength = size / 4;
+        int crosshairX = centerX + (int)(Math.sin(rad) * crosshairLength);
+        int crosshairY = centerY + (int)(Math.cos(rad) * crosshairLength);
+        
+        // Draw crosshair line
+        RenderUtils.renderLine(ctx.getMatrices(), new Color(80, 200, 80, 200), 
+            new Vec3d(centerX, centerY, 0), new Vec3d(crosshairX, crosshairY, 0));
         
         // Draw center dot (player)
         ctx.fill(centerX - 3, centerY - 3, centerX + 3, centerY + 3, URANIUM_GREEN.getRGB());
         
-        // Draw other players
+        // Draw cardinal directions (N, E, S, W)
+        TextRenderer.drawString("N", ctx, centerX - 4, centerY - size / 2 + 10, CARDINAL_COLOR.getRGB());
+        TextRenderer.drawString("S", ctx, centerX - 4, centerY + size / 2 - 20, CARDINAL_COLOR.getRGB());
+        TextRenderer.drawString("E", ctx, centerX + size / 2 - 20, centerY - 5, CARDINAL_COLOR.getRGB());
+        TextRenderer.drawString("W", ctx, centerX - size / 2 + 10, centerY - 5, CARDINAL_COLOR.getRGB());
+        
+        // Draw other players with smaller names
         for (Entity ent : mc.world.getPlayers()) {
             if (ent == mc.player) continue;
             
@@ -245,43 +287,43 @@ public final class HUD extends Module {
             if (distance > range) continue;
             
             // Scale to radar size
-            int px = (int)(centerX + (dx / range) * (size / 2 - 8));
-            int py = (int)(centerY + (dz / range) * (size / 2 - 8));
+            int px = (int)(centerX + (dx / range) * (size / 2 - 12));
+            int py = (int)(centerY + (dz / range) * (size / 2 - 12));
             
             // Check bounds
-            if (px > x + 4 && px < x + size - 4 && py > y + 4 && py < y + size - 4) {
+            if (px > x + 6 && px < x + size - 6 && py > y + 6 && py < y + size - 6) {
                 PlayerEntity player = (PlayerEntity) ent;
                 
-                // Draw player dot
-                RenderUtils.renderCircle(ctx.getMatrices(), new Color(80, 200, 80, 200), px, py, 4, 12);
+                // Draw player dot (less green, more subtle)
+                RenderUtils.renderCircle(ctx.getMatrices(), new Color(80, 200, 80, 180), px, py, 3, 12);
                 
-                // Draw player name
+                // Draw player name (smaller)
                 String name = player.getName().getString();
                 int nameWidth = TextRenderer.getWidth(name);
                 int nameX = px - nameWidth / 2;
-                int nameY = py + 8;
+                int nameY = py + 6;
                 
-                // Name background
+                // Name background (semi-transparent)
                 if (nameX > x + 2 && nameX + nameWidth < x + size - 2) {
-                    RenderUtils.renderRoundedQuad(ctx.getMatrices(), new Color(0, 0, 0, 150), nameX - 2, nameY - 2, nameX + nameWidth + 2, nameY + 10, 4, 4, 4, 4, 30);
-                    TextRenderer.drawString(name, ctx, nameX, nameY, TEXT_WHITE.getRGB());
+                    RenderUtils.renderRoundedQuad(ctx.getMatrices(), new Color(0, 0, 0, 120), nameX - 2, nameY - 2, nameX + nameWidth + 2, nameY + 8, 3, 3, 3, 3, 30);
+                    TextRenderer.drawString(name, ctx, nameX, nameY, TEXT_GRAY.getRGB());
                 }
             }
         }
         
         // Draw border
-        RenderUtils.renderRoundedOutline(ctx, new Color(80, 200, 80, 100), 
+        RenderUtils.renderRoundedOutline(ctx, new Color(80, 200, 80, 150), 
             x, y, x + size, y + size, 8, 8, 8, 8, 2, 5);
         
-        // Draw range circles
+        // Draw range circles (less prominent)
         int step = range / 4;
         for (int r = step; r <= range; r += step) {
-            int radius = (int)((double)r / range * (size / 2 - 4));
-            RenderUtils.renderCircle(ctx.getMatrices(), new Color(80, 200, 80, 50), centerX, centerY, radius, 36);
+            int radius = (int)((double)r / range * (size / 2 - 6));
+            RenderUtils.renderCircle(ctx.getMatrices(), new Color(80, 200, 80, 40), centerX, centerY, radius, 36);
         }
     }
 
-    // BOTTOM LEFT - Coordinates (below radar)
+    // BOTTOM LEFT - Coordinates
     private void renderCoordinates(DrawContext ctx) {
         String coords = String.format("X: %.0f  Y: %.0f  Z: %.0f",
                 mc.player.getX(), mc.player.getY(), mc.player.getZ());
@@ -291,7 +333,7 @@ public final class HUD extends Module {
         int bgWidth = width + padding * 2;
         int bgHeight = 22;
         int x = 12;
-        int y = getTopLeftHeight() + (int) radarSize.getValue() + 24;
+        int y = getTopLeftHeight() + (int) radarSize.getValue() + 16;
         
         // Background
         RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
@@ -300,24 +342,23 @@ public final class HUD extends Module {
         TextRenderer.drawString(coords, ctx, x + padding, y + 6, TEXT_GRAY.getRGB());
     }
 
-    // POTIONS - Left side (below coordinates) with icons
+    // POTIONS - With Minecraft potion icons
     private void renderPotions(DrawContext ctx) {
         List<StatusEffectInstance> effects = new ArrayList<>(mc.player.getStatusEffects());
         if (effects.isEmpty()) return;
         
-        int padding = 10;
-        int lineHeight = 16;
-        int iconSize = 16;
+        int padding = 8;
+        int lineHeight = 22;
+        int iconSize = 18;
         int x = 12;
-        int y = getTopLeftHeight() + (int) radarSize.getValue() + 24 + 28;
+        int y = getTopLeftHeight() + (int) radarSize.getValue() + 16 + 28;
         
         int potionCount = effects.size();
         int bgHeight = potionCount * lineHeight + padding;
         int maxWidth = 0;
         
         for (StatusEffectInstance effect : effects) {
-            String effectName = effect.getEffectType().value().getName().getString();
-            String text = effectName + " " + (effect.getDuration() / 20) + "s";
+            String text = formatPotionName(effect) + " " + (effect.getDuration() / 20);
             int w = TextRenderer.getWidth(text);
             if (w > maxWidth) maxWidth = w;
         }
@@ -328,39 +369,68 @@ public final class HUD extends Module {
         RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
         
         // Potion list with icons
-        int textY = y + padding / 2 + 3;
+        int textY = y + padding / 2 + 2;
         for (StatusEffectInstance effect : effects) {
-            String effectName = effect.getEffectType().value().getName().getString();
+            String effectName = formatPotionName(effect);
             int duration = effect.getDuration() / 20;
-            String text = effectName + " " + duration + "s";
-            Color effectColor = getPotionColor(effect);
+            String text = effectName + " " + duration;
             
-            // Draw potion icon (colored circle)
-            RenderUtils.renderCircle(ctx.getMatrices(), effectColor, x + padding + 8, textY + 5, 6, 12);
+            // Draw potion icon
+            Identifier icon = getPotionIcon(effect);
+            ctx.getMatrices().push();
+            ctx.getMatrices().translate(x + padding, textY, 0);
+            ctx.getMatrices().scale(0.9f, 0.9f, 1);
+            ctx.drawTexture(icon, 0, 0, 0, 0, 18, 18, 18, 18);
+            ctx.getMatrices().pop();
             
             // Draw text
-            TextRenderer.drawString(text, ctx, x + padding + iconSize + 4, textY, TEXT_GRAY.getRGB());
+            TextRenderer.drawString(text, ctx, x + padding + iconSize + 4, textY + 3, TEXT_GRAY.getRGB());
             textY += lineHeight;
         }
     }
 
-    private Color getPotionColor(StatusEffectInstance effect) {
+    private String formatPotionName(StatusEffectInstance effect) {
+        String name = effect.getEffectType().value().getName().getString();
+        int amplifier = effect.getAmplifier();
+        if (amplifier > 0) {
+            String roman = getRomanNumeral(amplifier + 1);
+            name = name + " " + roman;
+        }
+        return name;
+    }
+
+    private String getRomanNumeral(int num) {
+        switch (num) {
+            case 1: return "I";
+            case 2: return "II";
+            case 3: return "III";
+            case 4: return "IV";
+            case 5: return "V";
+            default: return String.valueOf(num);
+        }
+    }
+
+    private Identifier getPotionIcon(StatusEffectInstance effect) {
         String name = effect.getEffectType().value().getName().getString().toLowerCase();
         
-        if (name.contains("speed")) return SPEED_COLOR;
-        if (name.contains("strength")) return STRENGTH_COLOR;
-        if (name.contains("jump boost")) return JUMP_BOOST_COLOR;
-        if (name.contains("regeneration")) return REGENERATION_COLOR;
-        if (name.contains("resistance")) return RESISTANCE_COLOR;
-        if (name.contains("fire resistance")) return FIRE_RESISTANCE_COLOR;
-        if (name.contains("water breathing")) return WATER_BREATHING_COLOR;
-        if (name.contains("invisibility")) return INVISIBILITY_COLOR;
-        if (name.contains("night vision")) return NIGHT_VISION_COLOR;
-        if (name.contains("poison")) return POISON_COLOR;
-        if (name.contains("wither")) return WITHER_COLOR;
-        if (name.contains("absorption")) return ABSORPTION_COLOR;
+        if (name.contains("speed")) return SPEED_ICON;
+        if (name.contains("slowness")) return SLOWNESS_ICON;
+        if (name.contains("haste")) return HASTE_ICON;
+        if (name.contains("strength")) return STRENGTH_ICON;
+        if (name.contains("jump boost")) return JUMP_BOOST_ICON;
+        if (name.contains("regeneration")) return REGENERATION_ICON;
+        if (name.contains("resistance")) return RESISTANCE_ICON;
+        if (name.contains("fire resistance")) return FIRE_RESISTANCE_ICON;
+        if (name.contains("water breathing")) return WATER_BREATHING_ICON;
+        if (name.contains("invisibility")) return INVISIBILITY_ICON;
+        if (name.contains("night vision")) return NIGHT_VISION_ICON;
+        if (name.contains("poison")) return POISON_ICON;
+        if (name.contains("wither")) return WITHER_ICON;
+        if (name.contains("absorption")) return ABSORPTION_ICON;
+        if (name.contains("health boost")) return HEALTH_BOOST_ICON;
+        if (name.contains("luck")) return LUCK_ICON;
         
-        return new Color(200, 200, 200, 200);
+        return SPEED_ICON; // Default
     }
 
     private int getTopLeftHeight() {
