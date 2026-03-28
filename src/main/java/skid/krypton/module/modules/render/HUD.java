@@ -81,11 +81,6 @@ public final class HUD extends Module {
             // Reset block entity counts
             blockEntityCounts.clear();
 
-            // TOP RIGHT - Modules (moved down to avoid potion icons)
-            if (showModules.getValue()) {
-                renderModules(ctx, w, h);
-            }
-            
             // TOP LEFT - Watermark and Info
             if (showWatermark.getValue() || showInfo.getValue()) {
                 renderTopLeft(ctx);
@@ -110,17 +105,23 @@ public final class HUD extends Module {
             if (showCoordinates.getValue()) {
                 renderCoordinates(ctx);
             }
+            
+            // LEFT SIDE - Modules (below coordinates)
+            if (showModules.getValue()) {
+                renderModules(ctx);
+            }
 
             RenderUtils.scaledProjection();
         }
     }
 
-    // TOP RIGHT - Enabled Modules (moved down more)
-    private void renderModules(DrawContext ctx, int screenWidth, int screenHeight) {
+    // LEFT SIDE - Enabled Modules (under coordinates)
+    private void renderModules(DrawContext ctx) {
         List<Module> list = getSortedModules();
         int padding = 12;
         int lineHeight = 16;
-        int y = 35; // Moved down from 12 to 35
+        int x = 12;
+        int y = getTopLeftHeight() + (int) radarSize.getValue() + 16 + 32;
         int moduleCount = 0;
         
         for (Module m : list) {
@@ -141,7 +142,6 @@ public final class HUD extends Module {
         }
         
         int bgWidth = maxWidth + padding * 2;
-        int x = screenWidth - bgWidth - 12;
         
         // Background
         RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
@@ -222,7 +222,7 @@ public final class HUD extends Module {
         TextRenderer.drawString(time, ctx, x + padding, y + 6, TEXT_WHITE.getRGB());
     }
 
-    // RADAR - Center is player, facing direction is top of radar
+    // RADAR - Center is player, N/E/S/W rotate to top
     private void renderRadar(DrawContext ctx) {
         int size = (int) radarSize.getValue();
         int range = (int) radarRange.getValue();
@@ -236,7 +236,7 @@ public final class HUD extends Module {
         int centerX = x + size / 2;
         int centerY = y + size / 2;
         
-        // Get player's facing direction - this will be the TOP of the radar
+        // Get player's facing direction - cardinal directions rotate to match
         float yaw = mc.player.getYaw();
         double rad = Math.toRadians(yaw);
         
@@ -257,16 +257,15 @@ public final class HUD extends Module {
         ctx.fill(centerX - 1, centerY - 1, centerX + 1, centerY + 1, URANIUM_GREEN.getRGB());
         
         // Draw cardinal directions - rotated so facing direction is TOP
-        // North is always forward (where you're looking)
         int compassDistance = size / 2 - 15;
-        int northX = centerX;
-        int northY = centerY - compassDistance;
-        int southX = centerX;
-        int southY = centerY + compassDistance;
-        int eastX = centerX + compassDistance;
-        int eastY = centerY;
-        int westX = centerX - compassDistance;
-        int westY = centerY;
+        int northX = centerX + (int)(Math.sin(rad) * compassDistance);
+        int northY = centerY - (int)(Math.cos(rad) * compassDistance);
+        int southX = centerX - (int)(Math.sin(rad) * compassDistance);
+        int southY = centerY + (int)(Math.cos(rad) * compassDistance);
+        int eastX = centerX + (int)(Math.cos(rad) * compassDistance);
+        int eastY = centerY + (int)(Math.sin(rad) * compassDistance);
+        int westX = centerX - (int)(Math.cos(rad) * compassDistance);
+        int westY = centerY - (int)(Math.sin(rad) * compassDistance);
         
         TextRenderer.drawString("N", ctx, northX - 4, northY - 5, CARDINAL_COLOR.getRGB());
         TextRenderer.drawString("S", ctx, southX - 4, southY - 5, CARDINAL_COLOR.getRGB());
@@ -286,8 +285,8 @@ public final class HUD extends Module {
             // Rotate coordinates based on player facing direction
             double angle = Math.atan2(dz, dx);
             double relAngle = angle - rad;
-            double rotatedX = Math.sin(relAngle) * distance;
-            double rotatedZ = Math.cos(relAngle) * distance;
+            double rotatedX = Math.cos(relAngle) * distance;
+            double rotatedZ = Math.sin(relAngle) * distance;
             
             int px = (int)(centerX + (rotatedX / range) * (size / 2 - 12));
             int py = (int)(centerY + (rotatedZ / range) * (size / 2 - 12));
@@ -308,7 +307,7 @@ public final class HUD extends Module {
             }
         }
         
-        // Draw block entities (only spawners, chests, shulkers, beacons, barrels, pistons)
+        // Draw block entities (all Y levels)
         if (showBlockEntities.getValue()) {
             for (int chunkX = -range; chunkX <= range; chunkX++) {
                 for (int chunkZ = -range; chunkZ <= range; chunkZ++) {
@@ -317,6 +316,9 @@ public final class HUD extends Module {
                         for (BlockPos pos : chunk.getBlockEntityPositions()) {
                             BlockEntity blockEntity = mc.world.getBlockEntity(pos);
                             if (blockEntity == null) continue;
+                            
+                            // Check Y level - show all from -64 to 320
+                            if (pos.getY() < -64 || pos.getY() > 320) continue;
                             
                             // Only show specific block types
                             if (!shouldShowBlockEntity(blockEntity)) continue;
@@ -334,8 +336,8 @@ public final class HUD extends Module {
                             // Rotate coordinates based on player facing direction
                             double angle = Math.atan2(dz, dx);
                             double relAngle = angle - rad;
-                            double rotatedX = Math.sin(relAngle) * distance;
-                            double rotatedZ = Math.cos(relAngle) * distance;
+                            double rotatedX = Math.cos(relAngle) * distance;
+                            double rotatedZ = Math.sin(relAngle) * distance;
                             
                             int px = (int)(centerX + (rotatedX / range) * (size / 2 - 12));
                             int py = (int)(centerY + (rotatedZ / range) * (size / 2 - 12));
@@ -456,7 +458,7 @@ public final class HUD extends Module {
         }
     }
 
-    // Coordinates
+    // Coordinates (below radar)
     private void renderCoordinates(DrawContext ctx) {
         String coords = String.format("X: %.0f  Y: %.0f  Z: %.0f",
                 mc.player.getX(), mc.player.getY(), mc.player.getZ());
