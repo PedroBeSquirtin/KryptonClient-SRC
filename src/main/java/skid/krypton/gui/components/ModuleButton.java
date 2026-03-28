@@ -28,7 +28,7 @@ public final class ModuleButton {
     
     // Clean Green Color Scheme
     private final Color MODULE_BG = new Color(22, 30, 22, 235);
-    private final Color HOVER_BG = new Color(100, 220, 100, 20);
+    private final Color HOVER_BG = new Color(120, 255, 120, 20);
     private final Color BORDER_COLOR = new Color(65, 95, 65, 120);
     private final Color GLOW_GREEN = new Color(70, 180, 70, 60);
     private final Color BUTTON_ON = new Color(50, 140, 50, 255);
@@ -123,13 +123,12 @@ public final class ModuleButton {
                 this.renderSettings(drawContext, mouseX, mouseY, delta);
             }
             
-            // Tooltip on hover with centered text
+            // Tooltip on hover - positioned to the right of the mouse
             if (this.isHovered(mouseX, mouseY)) {
                 CharSequence description = this.module.getDescription();
                 if (description != null && description.length() > 0 && Krypton.INSTANCE.GUI != null) {
-                    int textWidth = getTextWidth(description.toString());
-                    int tooltipX = mouseX + 10 - (textWidth / 2);
-                    Krypton.INSTANCE.GUI.setTooltip(description, tooltipX, mouseY + 20);
+                    // Position tooltip to the right of the mouse, not centered
+                    Krypton.INSTANCE.GUI.setTooltip(description, mouseX + 15, mouseY + 5);
                 }
             }
         } catch (Exception e) {
@@ -174,7 +173,7 @@ public final class ModuleButton {
     private void renderModuleInfo(final DrawContext drawContext, final int x, final int y, final int width, final int height) {
         if (this.module == null) return;
         
-        // Module name - centered vertically
+        // Module name
         String moduleName = this.module.getName() != null ? this.module.getName().toString() : "";
         int textY = y + (height - 8) / 2;
         drawText(drawContext, moduleName, x + 12, textY, TEXT_WHITE.getRGB());
@@ -192,7 +191,7 @@ public final class ModuleButton {
         RenderUtils.renderRoundedQuad(drawContext.getMatrices(), buttonBg,
             buttonX, buttonY, buttonX + buttonWidth, buttonY + buttonHeight, 11, 11, 11, 11, 30);
         
-        // Button text - perfectly centered horizontally and vertically
+        // Button text - perfectly centered
         String buttonText = isEnabled ? "ON" : "OFF";
         int textWidth = getTextWidth(buttonText);
         int textXPos = buttonX + (buttonWidth - textWidth) / 2;
