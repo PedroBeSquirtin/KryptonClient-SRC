@@ -1,7 +1,6 @@
 package skid.krypton.module.modules.render;
 
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.MobSpawnerBlockEntity;
+import net.minecraft.block.entity.*;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.Entity;
@@ -23,6 +22,7 @@ import java.awt.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class HUD extends Module {
 
@@ -35,7 +35,16 @@ public final class HUD extends Module {
     private static final Color TEXT_GRAY = new Color(170, 180, 170, 255);
     private static final Color CARDINAL_COLOR = new Color(80, 200, 80, 200);
     private static final Color CROSSHAIR_COLOR = new Color(80, 200, 80, 180);
+    
+    // Block Entity Colors
     private static final Color SPAWNER_COLOR = new Color(200, 80, 200, 200);
+    private static final Color CHEST_COLOR = new Color(200, 150, 80, 200);
+    private static final Color ENDER_CHEST_COLOR = new Color(100, 80, 200, 200);
+    private static final Color SHULKER_COLOR = new Color(150, 80, 200, 200);
+    private static final Color FURNACE_COLOR = new Color(100, 100, 100, 200);
+    private static final Color BEACON_COLOR = new Color(80, 200, 200, 200);
+    private static final Color ENCHANT_TABLE_COLOR = new Color(100, 100, 255, 200);
+    private static final Color BARREL_COLOR = new Color(200, 120, 80, 200);
 
     // SETTINGS
     private final BooleanSetting showWatermark = new BooleanSetting("Watermark", true);
@@ -51,6 +60,9 @@ public final class HUD extends Module {
     
     private final ModeSetting<ModuleListSorting> moduleSortingMode =
             new ModeSetting<>("Sort Mode", ModuleListSorting.LENGTH, ModuleListSorting.class);
+
+    // Block entity counter for display
+    private final Map<String, Integer> blockEntityCounts = new ConcurrentHashMap<>();
 
     public HUD() {
         super("HUD", "Clean HUD", -1, Category.RENDER);
@@ -70,6 +82,9 @@ public final class HUD extends Module {
 
             RenderUtils.unscaledProjection();
 
+            // Reset block entity counts
+            blockEntityCounts.clear();
+
             // TOP RIGHT - Modules
             if (showModules.getValue()) {
                 renderModules(ctx, w, h);
@@ -88,6 +103,11 @@ public final class HUD extends Module {
             // LEFT SIDE - Radar
             if (showRadar.getValue()) {
                 renderRadar(ctx);
+            }
+            
+            // LEFT SIDE - Block Entity Counter (right side of radar)
+            if (showBlockEntities.getValue() && !blockEntityCounts.isEmpty()) {
+                renderBlockEntityCounter(ctx);
             }
             
             // LEFT SIDE - Coordinates (below radar)
@@ -229,8 +249,8 @@ public final class HUD extends Module {
         float yaw = mc.player.getYaw();
         double rad = Math.toRadians(yaw);
         
-        // Draw thin + crosshair that reaches the edges
-        int armLength = size / 2;
+        // Draw thin + crosshair that reaches the LAST circle (not the border)
+        int armLength = size / 2 - 6;
         
         // Draw thin horizontal line (left-right) - 1 pixel thick
         for (int i = -armLength; i <= armLength; i++) {
@@ -295,7 +315,7 @@ public final class HUD extends Module {
             }
         }
         
-        // Draw block entities - FIXED: removed isLoaded() check
+        // Draw block entities with their icons and count them
         if (showBlockEntities.getValue()) {
             for (int chunkX = -range; chunkX <= range; chunkX++) {
                 for (int chunkZ = -range; chunkZ <= range; chunkZ++) {
@@ -311,6 +331,10 @@ public final class HUD extends Module {
                             
                             if (distance > range) continue;
                             
+                            // Count block entities for display
+                            String entityType = getBlockEntityName(blockEntity);
+                            blockEntityCounts.merge(entityType, 1, Integer::sum);
+                            
                             double angle = Math.atan2(dz, dx);
                             double relAngle = angle - rad;
                             double rotatedX = Math.cos(relAngle) * distance;
@@ -322,7 +346,12 @@ public final class HUD extends Module {
                             if (px > x + 4 && px < x + size - 4 && py > y + 4 && py < y + size - 4) {
                                 Color blockColor = getBlockEntityColor(blockEntity);
                                 if (blockColor != null) {
-                                    RenderUtils.renderCircle(ctx.getMatrices(), blockColor, px, py, 2, 10);
+                                    // Draw colored dot
+                                    RenderUtils.renderCircle(ctx.getMatrices(), blockColor, px, py, 3, 12);
+                                    
+                                    // Draw the first letter of the block type
+                                    String firstLetter = getBlockEntityIcon(blockEntity);
+                                    TextRenderer.drawString(firstLetter, ctx, px - 3, py - 4, TEXT_WHITE.getRGB());
                                 }
                             }
                         }
@@ -343,11 +372,90 @@ public final class HUD extends Module {
         }
     }
     
+    private String getBlockEntityName(BlockEntity blockEntity) {
+        if (blockEntity instanceof MobSpawnerBlockEntity) return "Spawner";
+        if (blockEntity instanceof ChestBlockEntity) return "Chest";
+        if (blockEntity instanceof EnderChestBlockEntity) return "Ender Chest";
+        if (blockEntity instanceof ShulkerBoxBlockEntity) return "Shulker";
+        if (blockEntity instanceof FurnaceBlockEntity) return "Furnace";
+        if (blockEntity instanceof BeaconBlockEntity) return "Beacon";
+        if (blockEntity instanceof EnchantingTableBlockEntity) return "Enchant";
+        if (blockEntity instanceof BarrelBlockEntity) return "Barrel";
+        return "Block";
+    }
+    
+    private String getBlockEntityIcon(BlockEntity blockEntity) {
+        if (blockEntity instanceof MobSpawnerBlockEntity) return "S";
+        if (blockEntity instanceof ChestBlockEntity) return "C";
+        if (blockEntity instanceof EnderChestBlockEntity) return "E";
+        if (blockEntity instanceof ShulkerBoxBlockEntity) return "B";
+        if (blockEntity instanceof FurnaceBlockEntity) return "F";
+        if (blockEntity instanceof BeaconBlockEntity) return "B";
+        if (blockEntity instanceof EnchantingTableBlockEntity) return "T";
+        if (blockEntity instanceof BarrelBlockEntity) return "R";
+        return "?";
+    }
+    
     private Color getBlockEntityColor(BlockEntity blockEntity) {
-        if (blockEntity instanceof MobSpawnerBlockEntity) {
-            return SPAWNER_COLOR;
+        if (blockEntity instanceof MobSpawnerBlockEntity) return SPAWNER_COLOR;
+        if (blockEntity instanceof ChestBlockEntity) return CHEST_COLOR;
+        if (blockEntity instanceof EnderChestBlockEntity) return ENDER_CHEST_COLOR;
+        if (blockEntity instanceof ShulkerBoxBlockEntity) return SHULKER_COLOR;
+        if (blockEntity instanceof FurnaceBlockEntity) return FURNACE_COLOR;
+        if (blockEntity instanceof BeaconBlockEntity) return BEACON_COLOR;
+        if (blockEntity instanceof EnchantingTableBlockEntity) return ENCHANT_TABLE_COLOR;
+        if (blockEntity instanceof BarrelBlockEntity) return BARREL_COLOR;
+        return TEXT_GRAY;
+    }
+    
+    // Block Entity Counter (right side of radar)
+    private void renderBlockEntityCounter(DrawContext ctx) {
+        int radarSizeVal = (int) radarSize.getValue();
+        int x = 12 + radarSizeVal + 12;
+        int y = getTopLeftHeight() + 12;
+        
+        int padding = 8;
+        int lineHeight = 14;
+        int counterCount = blockEntityCounts.size();
+        
+        if (counterCount == 0) return;
+        
+        int bgHeight = counterCount * lineHeight + padding;
+        int maxWidth = 0;
+        
+        for (Map.Entry<String, Integer> entry : blockEntityCounts.entrySet()) {
+            String text = entry.getKey() + ": " + entry.getValue();
+            int w = TextRenderer.getWidth(text);
+            if (w > maxWidth) maxWidth = w;
         }
-        return null;
+        
+        int bgWidth = maxWidth + padding * 2;
+        
+        // Background
+        RenderUtils.renderRoundedQuad(ctx.getMatrices(), BG_DARK, x, y, x + bgWidth, y + bgHeight, 8, 8, 8, 8, 50);
+        
+        // Counter list
+        int textY = y + padding / 2 + 2;
+        for (Map.Entry<String, Integer> entry : blockEntityCounts.entrySet()) {
+            String text = entry.getKey() + ": " + entry.getValue();
+            Color blockColor = getBlockEntityColorByName(entry.getKey());
+            TextRenderer.drawString(text, ctx, x + padding, textY, blockColor.getRGB());
+            textY += lineHeight;
+        }
+    }
+    
+    private Color getBlockEntityColorByName(String name) {
+        switch (name) {
+            case "Spawner": return SPAWNER_COLOR;
+            case "Chest": return CHEST_COLOR;
+            case "Ender Chest": return ENDER_CHEST_COLOR;
+            case "Shulker": return SHULKER_COLOR;
+            case "Furnace": return FURNACE_COLOR;
+            case "Beacon": return BEACON_COLOR;
+            case "Enchant": return ENCHANT_TABLE_COLOR;
+            case "Barrel": return BARREL_COLOR;
+            default: return TEXT_GRAY;
+        }
     }
 
     // Coordinates
